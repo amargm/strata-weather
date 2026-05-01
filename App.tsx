@@ -163,9 +163,8 @@ export default function App(props: { initialLayer?: number }) {
   const [currentLayer, setCurrentLayer] = useState(0);
   const prevLayerRef = useRef(0);
 
-  // --- Navigation label + onboarding ---
+  // --- Navigation + onboarding ---
   const [showSwipeHint, setShowSwipeHint] = useState(false);
-  const navLabelFade = useRef(new RNAnimated.Value(1)).current;
   const swipeHintFade = useRef(new RNAnimated.Value(0)).current;
 
   // Check if first launch → show swipe hint
@@ -186,21 +185,16 @@ export default function App(props: { initialLayer?: number }) {
     });
   }, []);
 
-  // Fade nav label on layer change
-  const animateNavLabel = useCallback(() => {
-    navLabelFade.setValue(0);
-    RNAnimated.timing(navLabelFade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-  }, [navLabelFade]);
+
 
   const onScrollEnd = useCallback((event: any) => {
     const page = Math.round(event.nativeEvent.contentOffset.y / SCREEN_HEIGHT);
     setCurrentLayer(page);
     AsyncStorage.setItem(LAST_LAYER_KEY, String(page));
-    // Haptic + label animation on layer change
+    // Haptic on layer change
     if (page !== prevLayerRef.current) {
       prevLayerRef.current = page;
       Haptics.selectionAsync();
-      animateNavLabel();
       // Dismiss swipe hint on first scroll
       if (showSwipeHint) {
         RNAnimated.timing(swipeHintFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
@@ -209,7 +203,7 @@ export default function App(props: { initialLayer?: number }) {
         AsyncStorage.setItem(ONBOARDED_KEY, '1');
       }
     }
-  }, [animateNavLabel, showSwipeHint, swipeHintFade]);
+  }, [showSwipeHint, swipeHintFade]);
 
   const goToLayer = useCallback((index: number) => {
     scrollRef.current?.scrollTo({ y: index * SCREEN_HEIGHT, animated: true });
@@ -458,18 +452,8 @@ export default function App(props: { initialLayer?: number }) {
         </View>
       </Animated.ScrollView>
 
-      {/* Navigation indicator — vertical, right side */}
+      {/* Navigation dots — vertical, right side, centered */}
       <View style={styles.navContainer}>
-        <RNAnimated.Text
-          style={[
-            styles.navLabel,
-            { opacity: navLabelFade },
-            DARK_LAYERS.has(currentLayer) && styles.navLabelLight,
-          ]}
-        >
-          {LAYER_LABELS[currentLayer]}
-        </RNAnimated.Text>
-
         <View style={styles.dotsRow}>
           {LAYER_LABELS.map((label, i) => (
             <TouchableOpacity
@@ -484,15 +468,6 @@ export default function App(props: { initialLayer?: number }) {
             </TouchableOpacity>
           ))}
         </View>
-
-        <Text
-          style={[
-            styles.navCounter,
-            DARK_LAYERS.has(currentLayer) && styles.navCounterLight,
-          ]}
-        >
-          {String(currentLayer + 1).padStart(2, '0')}/{String(LAYER_LABELS.length).padStart(2, '0')}
-        </Text>
       </View>
 
       {/* First-launch swipe hint */}
@@ -561,39 +536,19 @@ const styles = StyleSheet.create({
   },
   navContainer: {
     position: 'absolute',
-    right: 20,
-    bottom: 40,
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -40 }],
     alignItems: 'center',
-  },
-  navLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: theme.colors.muted,
-    marginBottom: 10,
-  },
-  navLabelLight: {
-    color: 'rgba(240,235,225,0.6)',
   },
   dotsRow: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   dot: {
     width: 6,
     borderRadius: 3,
-  },
-  navCounter: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 8,
-    letterSpacing: 1,
-    color: 'rgba(15,14,12,0.2)',
-    marginTop: 10,
-  },
-  navCounterLight: {
-    color: 'rgba(240,235,225,0.25)',
   },
   swipeHint: {
     position: 'absolute',
