@@ -132,8 +132,8 @@ export default function App(props: { initialLayer?: number }) {
     if (!data?.current || !coords || Platform.OS !== 'android') return;
     try {
       const w = data.current;
-      const code = w.weatherCode || 0;
-      const condition = WEATHER_CODES[code]?.label || 'Unknown';
+      const code = w.weatherCode || 1000;
+      const condition = WEATHER_CODES[code]?.label || 'Clear';
       const hiTemp = data.daily?.[0]?.values?.temperatureMax ?? w.temperature + 2;
       const loTemp = data.daily?.[0]?.values?.temperatureMin ?? w.temperature - 2;
 
@@ -330,8 +330,8 @@ export default function App(props: { initialLayer?: number }) {
   const seasonalColors = useMemo(() => getSeasonalColors(), []);
   const expressiveDesc = useMemo(() => {
     if (!data?.current) return '';
-    const code = data.current.weatherCode || 0;
-    const label = WEATHER_CODES[code]?.label || 'Unknown';
+    const code = data.current.weatherCode || 1000;
+    const label = WEATHER_CODES[code]?.label || 'Clear';
     return getExpressiveDescription(data.current, label);
   }, [data?.current]);
 

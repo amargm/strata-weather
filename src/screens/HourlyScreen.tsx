@@ -64,7 +64,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       >
         {hourly.map((item, index) => {
           const code = item.values.weatherCode;
-          const condition = WEATHER_CODES[code] || WEATHER_CODES[0];
+          const condition = WEATHER_CODES[code] || WEATHER_CODES[1000];
           const isNow = index === 0;
 
           return (

@@ -47,8 +47,8 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
 
   const now = new Date();
   const dateStr = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
-  const conditionCode = weather?.weatherCode || 0;
-  const condition = WEATHER_CODES[conditionCode] || WEATHER_CODES[0];
+  const conditionCode = weather?.weatherCode || 1000;
+  const condition = WEATHER_CODES[conditionCode] || WEATHER_CODES[1000];
 
   return (
     <View style={styles.container}>

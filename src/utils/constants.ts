@@ -18,7 +18,6 @@ export const WEATHER_FIELDS = [
 
 // Weather code to condition mapping (Tomorrow.io codes)
 export const WEATHER_CODES: Record<number, { label: string; icon: string }> = {
-  0: { label: 'Unknown', icon: '–' },
   1000: { label: 'Clear', icon: '☀️' },
   1001: { label: 'Cloudy', icon: '☁️' },
   1100: { label: 'Mostly Clear', icon: '🌤' },

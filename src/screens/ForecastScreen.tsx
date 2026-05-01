@@ -56,7 +56,7 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
       {/* Forecast rows */}
       <View style={styles.table} accessibilityRole="list">
         {daily.map((day, index) => {
-          const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[0];
+          const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[1000];
           const barLeft = ((day.values.temperatureMin - minTemp) / range) * 100;
           const barWidth = ((day.values.temperatureMax - day.values.temperatureMin) / range) * 100;
 
