@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Strata</string>
+    <string name="widget_description">Current weather at a glance — temp, humidity, wind, UV &amp; rain.</string>
 </resources>

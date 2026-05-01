@@ -4,4 +4,6 @@
     <color name="ink">#FF0F0E0C</color>
     <color name="accent">#FFC4411C</color>
     <color name="accent_2">#FF1C5DC4</color>
+    <color name="muted">#FF8A8070</color>
+    <color name="widget_bg">#F2F0EBE1</color>
 </resources>
