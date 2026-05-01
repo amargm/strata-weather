@@ -16,7 +16,10 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   interpolate,
+  interpolateColor,
   Extrapolation,
+  runOnJS,
+  useAnimatedReaction,
 } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -98,8 +101,23 @@ export default function App(props: { initialLayer?: number }) {
   // --- Loading tip rotation ---
   const [tipIndex, setTipIndex] = useState(0);
   const tipFade = useRef(new RNAnimated.Value(1)).current;
+
+  // --- Splash screen (show on every app open) ---
+  const [showSplash, setShowSplash] = useState(true);
+  const splashOpacity = useRef(new RNAnimated.Value(1)).current;
   useEffect(() => {
-    if (!(locLoading || weatherLoading)) return;
+    const timer = setTimeout(() => {
+      RNAnimated.timing(splashOpacity, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }).start(() => setShowSplash(false));
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!showSplash && !(locLoading || weatherLoading)) return;
     const interval = setInterval(() => {
       RNAnimated.timing(tipFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
         setTipIndex(prev => (prev + 1) % LOADING_TIPS.length);
@@ -107,7 +125,7 @@ export default function App(props: { initialLayer?: number }) {
       });
     }, 2800);
     return () => clearInterval(interval);
-  }, [locLoading, weatherLoading]);
+  }, [showSplash, locLoading, weatherLoading]);
 
   // --- Sync weather data to Android widget ---
   useEffect(() => {
@@ -243,6 +261,20 @@ export default function App(props: { initialLayer?: number }) {
     },
   });
 
+  // Track nearest layer in real-time during scroll for smooth nav updates
+  useAnimatedReaction(
+    () => {
+      const page = Math.round(scrollY.value / SCREEN_HEIGHT);
+      return Math.max(0, Math.min(page, LAYER_LABELS.length - 1));
+    },
+    (current, previous) => {
+      if (previous !== null && current !== previous) {
+        runOnJS(setCurrentLayer)(current);
+      }
+    },
+    []
+  );
+
   // --- Parallax animated styles for each layer ---
   const makeLayerStyle = (index: number) => {
     return useAnimatedStyle(() => {
@@ -274,6 +306,26 @@ export default function App(props: { initialLayer?: number }) {
   const layer4Style = makeLayerStyle(4);
   const layerStyles = [layer0Style, layer1Style, layer2Style, layer3Style, layer4Style];
 
+  // --- Scroll-driven dot indicator animations (vertical pills) ---
+  const makeDotAnimStyle = (index: number) => {
+    return useAnimatedStyle(() => {
+      const progress = scrollY.value / SCREEN_HEIGHT;
+      const dist = Math.abs(progress - index);
+      const active = interpolate(dist, [0, 0.5], [1, 0], Extrapolation.CLAMP);
+      return {
+        height: interpolate(active, [0, 1], [6, 20], Extrapolation.CLAMP),
+        opacity: interpolate(active, [0, 1], [0.35, 1], Extrapolation.CLAMP),
+        backgroundColor: interpolateColor(active, [0, 1], ['#8a8070', '#c4411c']),
+      };
+    });
+  };
+  const dotAnim0 = makeDotAnimStyle(0);
+  const dotAnim1 = makeDotAnimStyle(1);
+  const dotAnim2 = makeDotAnimStyle(2);
+  const dotAnim3 = makeDotAnimStyle(3);
+  const dotAnim4 = makeDotAnimStyle(4);
+  const dotAnimStyles = [dotAnim0, dotAnim1, dotAnim2, dotAnim3, dotAnim4];
+
   // --- Derived values ---
   const seasonalColors = useMemo(() => getSeasonalColors(), []);
   const expressiveDesc = useMemo(() => {
@@ -292,7 +344,7 @@ export default function App(props: { initialLayer?: number }) {
   // --- Skeleton loading screen ---
   if (!fontsLoaded) return null;
 
-  if ((locLoading || weatherLoading) && !data) {
+  if ((locLoading || weatherLoading) && !data && !showSplash) {
     return (
       <View style={styles.loadingContainer} accessible accessibilityRole="progressbar" accessibilityLabel="Loading weather data">
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
@@ -302,7 +354,7 @@ export default function App(props: { initialLayer?: number }) {
   }
 
   // --- Friendly error screen ---
-  if (error && !data) {
+  if (error && !data && !showSplash) {
     const { title, body } = friendlyError(error);
     return (
       <View style={styles.loadingContainer} accessible accessibilityRole="alert">
@@ -406,9 +458,8 @@ export default function App(props: { initialLayer?: number }) {
         </View>
       </Animated.ScrollView>
 
-      {/* Navigation indicator */}
+      {/* Navigation indicator — vertical, right side */}
       <View style={styles.navContainer}>
-        {/* Current layer label */}
         <RNAnimated.Text
           style={[
             styles.navLabel,
@@ -419,27 +470,21 @@ export default function App(props: { initialLayer?: number }) {
           {LAYER_LABELS[currentLayer]}
         </RNAnimated.Text>
 
-        {/* Dot indicators */}
         <View style={styles.dotsRow}>
           {LAYER_LABELS.map((label, i) => (
             <TouchableOpacity
               key={i}
               onPress={() => goToLayer(i)}
-              hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
-              style={[
-                styles.dot,
-                currentLayer === i && styles.dotActive,
-                DARK_LAYERS.has(currentLayer) && styles.dotOnDark,
-                currentLayer === i && DARK_LAYERS.has(currentLayer) && styles.dotActiveOnDark,
-              ]}
+              hitSlop={{ top: 10, bottom: 10, left: 16, right: 16 }}
               accessibilityLabel={`Go to ${label} layer, ${i + 1} of ${LAYER_LABELS.length}`}
               accessibilityRole="button"
               accessibilityState={{ selected: currentLayer === i }}
-            />
+            >
+              <Animated.View style={[styles.dot, dotAnimStyles[i]]} />
+            </TouchableOpacity>
           ))}
         </View>
 
-        {/* Layer counter */}
         <Text
           style={[
             styles.navCounter,
@@ -455,6 +500,13 @@ export default function App(props: { initialLayer?: number }) {
         <RNAnimated.View style={[styles.swipeHint, { opacity: swipeHintFade }]} accessible accessibilityRole="text" accessibilityLabel="Swipe up to explore layers">
           <Text style={styles.swipeHintArrow} importantForAccessibility="no">↕</Text>
           <Text style={styles.swipeHintText}>Swipe up to explore layers</Text>
+        </RNAnimated.View>
+      )}
+
+      {/* Splash screen overlay */}
+      {showSplash && (
+        <RNAnimated.View style={[styles.splashOverlay, { opacity: splashOpacity }]}>
+          <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
         </RNAnimated.View>
       )}
 
@@ -505,23 +557,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: theme.colors.ink,
   },
-  dotsNav: {
-    position: 'absolute',
-    bottom: 28,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-  },
   navContainer: {
     position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
+    right: 20,
+    bottom: 40,
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   navLabel: {
     fontFamily: theme.fonts.mono,
@@ -529,44 +569,26 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     color: theme.colors.muted,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   navLabelLight: {
     color: 'rgba(240,235,225,0.6)',
   },
   dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   dot: {
     width: 6,
-    height: 6,
     borderRadius: 3,
-    backgroundColor: theme.colors.muted,
-    opacity: 0.4,
-  },
-  dotActive: {
-    width: 22,
-    borderRadius: 3,
-    backgroundColor: theme.colors.accent,
-    opacity: 1,
-  },
-  dotOnDark: {
-    backgroundColor: 'rgba(240,235,225,0.35)',
-    opacity: 0.6,
-  },
-  dotActiveOnDark: {
-    backgroundColor: theme.colors.accent,
-    opacity: 1,
   },
   navCounter: {
     fontFamily: theme.fonts.mono,
     fontSize: 8,
     letterSpacing: 1,
     color: 'rgba(15,14,12,0.2)',
-    marginTop: 6,
+    marginTop: 10,
   },
   navCounterLight: {
     color: 'rgba(240,235,225,0.25)',
@@ -588,6 +610,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: theme.colors.muted,
     letterSpacing: 0.5,
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: theme.colors.paper,
+    zIndex: 100,
   },
 
 });
