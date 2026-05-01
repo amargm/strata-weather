@@ -91,12 +91,12 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Moisture in air</Text>
         </View>
-        <View style={styles.liveItem} accessible accessibilityLabel={`Wind ${Math.round(weather?.windSpeed || 0)} miles per hour. Ground speed`}>
+        <View style={styles.liveItem} accessible accessibilityLabel={`Wind ${Math.round((weather?.windSpeed || 0) * 3.6)} kilometers per hour`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>{Math.round(weather?.windSpeed || 0)}mph</Text>
+            <Text style={styles.liveVal}>{Math.round((weather?.windSpeed || 0) * 3.6)}km/h</Text>
             <Text style={styles.liveLabel}>Wind</Text>
           </View>
-          <Text style={styles.liveHint}>Ground speed</Text>
+          <Text style={styles.liveHint}>Wind speed</Text>
         </View>
         <View style={styles.liveItem} accessible accessibilityLabel={`UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength`}>
           <View style={styles.liveRow}>

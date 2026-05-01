@@ -49,7 +49,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
           <Text style={styles.eyebrow}>Layer 02 · Hourly</Text>
           <Text style={styles.title}>Hourly</Text>
         </View>
-        <Text style={styles.subtitle}>Next 24 hours →</Text>
+        <Text style={styles.subtitle}>Next {hourly.length} hours →</Text>
       </View>
 
       {/* Tape timeline */}
@@ -106,14 +106,14 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       {/* Details area — fills remaining vertical space */}
       <View style={styles.detailsArea}>
         {/* Wind section — 2 columns */}
-        <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round(currentWind?.windSpeed ?? 0)} miles per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection ?? 0)] || windDirText(currentWind?.windDirection ?? 0)} ${Math.round(currentWind?.windDirection ?? 0)} degrees${(currentWind?.windGust ?? 0) > 0 ? `, gusts to ${Math.round(currentWind?.windGust ?? 0)} miles per hour` : ''}`} accessibilityLiveRegion="polite">
+        <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round((currentWind?.windSpeed ?? 0) * 3.6)} kilometers per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection ?? 0)] || windDirText(currentWind?.windDirection ?? 0)} ${Math.round(currentWind?.windDirection ?? 0)} degrees${(currentWind?.windGust ?? 0) > 0 ? `, gusts to ${Math.round((currentWind?.windGust ?? 0) * 3.6)} kilometers per hour` : ''}`} accessibilityLiveRegion="polite">
           <View style={styles.windMain}>
             <Text style={styles.windLabelSm}>Wind · Sustained</Text>
             <Text style={styles.windBig}>
-              {Math.round(currentWind?.windSpeed ?? 0)}
-              <Text style={styles.windUnitSm}> mph</Text>
+              {Math.round((currentWind?.windSpeed ?? 0) * 3.6)}
+              <Text style={styles.windUnitSm}> km/h</Text>
             </Text>
-            <Text style={styles.windHint}>Steady average speed near ground</Text>
+            <Text style={styles.windHint}>Average wind speed at 10 m height</Text>
           </View>
           <View style={styles.windSide}>
             <Text style={styles.windDirLabel}>Direction</Text>
@@ -123,20 +123,24 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             <Text style={styles.windDirDeg}>{Math.round(currentWind?.windDirection ?? 0)}°</Text>
             {(currentWind?.windGust ?? 0) > 0 && (
               <Text style={styles.windGust}>
-                ▲ Gusts {Math.round(currentWind?.windGust ?? 0)} mph
+                ▲ Gusts {Math.round((currentWind?.windGust ?? 0) * 3.6)} km/h
               </Text>
             )}
           </View>
         </View>
 
         {/* Precipitation outlook */}
-        <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability ?? 0} percent chance next 2 hours. Easing to ${hourly[4]?.values.precipitationProbability ?? 0} percent by ${hourly[4] ? formatHour(hourly[4].startTime, 4) : 'unknown'}`}>
+        <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability ?? 0} percent now. ${(hourly[3]?.values.precipitationProbability ?? 0) > (hourly[0]?.values.precipitationProbability ?? 0) ? 'Rising' : (hourly[3]?.values.precipitationProbability ?? 0) < (hourly[0]?.values.precipitationProbability ?? 0) ? 'Dropping' : 'Holding'} to ${hourly[3]?.values.precipitationProbability ?? 0} percent by ${hourly[3] ? formatHour(hourly[3].startTime, 3) : 'unknown'}`}>
           <Text style={styles.precipLabel}>Precipitation Outlook</Text>
-          <Text style={styles.windHint}>Chance of rain or snow in your area</Text>
+          <Text style={styles.windHint}>Chance of precipitation in your area</Text>
           <Text style={styles.precipText}>
-            {hourly[0]?.values.precipitationProbability ?? 0}% chance next 2h.{' '}
-            Easing to {hourly[4]?.values.precipitationProbability ?? 0}% by{' '}
-            {hourly[4] ? formatHour(hourly[4].startTime, 4) : '--'}.
+            {hourly[0]?.values.precipitationProbability ?? 0}% chance this hour.{' '}
+            {(() => {
+              const now = hourly[0]?.values.precipitationProbability ?? 0;
+              const later = hourly[3]?.values.precipitationProbability ?? 0;
+              const trend = later > now ? 'Rising to' : later < now ? 'Dropping to' : 'Holding at';
+              return `${trend} ${later}% by ${hourly[3] ? formatHour(hourly[3].startTime, 3) : '--'}.`;
+            })()}
           </Text>
         </View>
       </View>

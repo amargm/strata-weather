@@ -206,7 +206,7 @@
                 android:id="@+id/widget_wind_val"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="-- mph"
+                android:text="-- km/h"
                 android:textSize="12sp"
                 android:textColor="#0f0e0c"
                 android:textStyle="bold"

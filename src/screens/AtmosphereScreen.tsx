@@ -127,13 +127,13 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
       </View>
 
       {/* Wind gust alert */}
-      {(weather?.windGust || 0) > 30 && (
-        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round(weather?.windGust || 0)} miles per hour expected`}>
+      {(weather?.windGust || 0) > 8 && (
+        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round((weather?.windGust || 0) * 3.6)} kilometers per hour expected`}>
           <Text style={styles.alertIcon} importantForAccessibility="no">⚠</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>
-              Gusts to {Math.round(weather?.windGust || 0)} mph expected. Secure loose objects.
+              Gusts to {Math.round((weather?.windGust || 0) * 3.6)} km/h expected. Secure loose objects.
             </Text>
           </View>
         </View>

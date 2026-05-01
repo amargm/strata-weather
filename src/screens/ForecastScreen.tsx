@@ -33,8 +33,8 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
-          <Text style={styles.eyebrow}>Layer 03 · 7-Day</Text>
-          <Text style={styles.title}>7 Days</Text>
+          <Text style={styles.eyebrow}>Layer 03 · {daily.length}-Day</Text>
+          <Text style={styles.title}>{daily.length} Days</Text>
         </View>
         <View style={styles.legend} accessible accessibilityLabel="Legend: red dot is high temperature, blue dot is low temperature">
           <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
@@ -50,7 +50,7 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
         <Text style={[styles.colHint, { width: 32, textAlign: 'center' }]}></Text>
         <Text style={[styles.colHint, { flex: 1, paddingHorizontal: 8 }]}>Range</Text>
         <Text style={[styles.colHint, { width: 65 }]}>Hi / Lo</Text>
-        <Text style={[styles.colHint, { width: 35, textAlign: 'right' }]}>Rain</Text>
+        <Text style={[styles.colHint, { width: 35, textAlign: 'right' }]}>Precip</Text>
       </View>
 
       {/* Forecast rows */}

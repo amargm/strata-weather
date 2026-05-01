@@ -178,7 +178,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_humidity_val,
                 "${prefs.getFloat("humidity", 0f).roundToInt()}%")
             views.setTextViewText(R.id.widget_wind_val,
-                "${prefs.getFloat("wind_speed", 0f).roundToInt()}mph")
+                "${(prefs.getFloat("wind_speed", 0f) * 3.6f).roundToInt()}km/h")
             views.setTextViewText(R.id.widget_uv_val,
                 "UV ${prefs.getFloat("uv_index", 0f).roundToInt()}")
             views.setTextViewText(R.id.widget_precip_val,
