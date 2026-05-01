@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#F0EBE1"
+    android:gravity="center_horizontal">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="STRATA WIDGET"
+        android:textSize="10sp"
+        android:textColor="#8a8070"
+        android:letterSpacing="0.2"
+        android:fontFamily="monospace"
+        android:layout_marginTop="40dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Configure Widget"
+        android:textSize="24sp"
+        android:textColor="#0f0e0c"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Choose how much detail to show"
+        android:textSize="14sp"
+        android:textColor="#8a8070"
+        android:layout_marginTop="4dp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"
+        android:background="#2A0f0e0c" />
+
+    <!-- Style: Full -->
+    <LinearLayout
+        android:id="@+id/config_style_full"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/widget_bg"
+        android:gravity="center_vertical">
+
+        <RadioButton
+            android:id="@+id/radio_full"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:buttonTint="#c4411c" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Full"
+                android:textSize="16sp"
+                android:textColor="#0f0e0c"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Temperature, stats, hi/lo, condition"
+                android:textSize="12sp"
+                android:textColor="#8a8070"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="12dp" />
+
+    <!-- Style: Compact -->
+    <LinearLayout
+        android:id="@+id/config_style_compact"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/widget_bg"
+        android:gravity="center_vertical">
+
+        <RadioButton
+            android:id="@+id/radio_compact"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="false"
+            android:buttonTint="#c4411c" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Compact"
+                android:textSize="16sp"
+                android:textColor="#0f0e0c"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Temperature and condition only"
+                android:textSize="12sp"
+                android:textColor="#8a8070"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Spacer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Confirm button -->
+    <TextView
+        android:id="@+id/config_confirm"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center"
+        android:text="Add Widget"
+        android:textSize="16sp"
+        android:textColor="#F0EBE1"
+        android:textStyle="bold"
+        android:background="@drawable/config_button_bg"
+        android:layout_marginBottom="24dp" />
+
+</LinearLayout>

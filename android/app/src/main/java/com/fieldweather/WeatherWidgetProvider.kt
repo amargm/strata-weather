@@ -26,6 +26,31 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         for (appWidgetId in appWidgetIds) {
             refreshWidget(context, appWidgetManager, appWidgetId)
         }
+        // Trigger one-shot WorkManager refresh (fetches fresh data if coordinates available)
+        WeatherRefreshWorker.refreshNow(context)
+    }
+
+    /** Called when the first widget is placed. Schedule periodic background refresh. */
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Log.d(TAG, "onEnabled — first widget placed, scheduling periodic refresh")
+        WeatherRefreshWorker.schedulePeriodic(context)
+    }
+
+    /** Called when the last widget is removed. Cancel periodic background refresh. */
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        Log.d(TAG, "onDisabled — last widget removed, cancelling periodic refresh")
+        WeatherRefreshWorker.cancelPeriodic(context)
+    }
+
+    /** Clean up per-widget config when individual widgets are removed. */
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        for (id in appWidgetIds) {
+            WidgetConfigActivity.removeWidgetStyle(context, id)
+            Log.d(TAG, "onDeleted — cleaned up config for widget $id")
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -38,6 +63,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             for (id in ids) {
                 refreshWidget(context, mgr, id)
             }
+            // Also trigger WorkManager to fetch fresh data
+            WeatherRefreshWorker.refreshNow(context)
         }
     }
 
@@ -77,7 +104,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun refreshWidget(
+        fun refreshWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int
@@ -85,14 +112,25 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             try {
                 val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 val hasData = prefs.contains("temp") && prefs.getLong("updated_at", 0L) > 0
-                Log.d(TAG, "refreshWidget id=$appWidgetId hasData=$hasData")
+                val style = WidgetConfigActivity.getWidgetStyle(context, appWidgetId)
+                val isCompact = style == WidgetConfigActivity.STYLE_COMPACT
+                Log.d(TAG, "refreshWidget id=$appWidgetId hasData=$hasData style=$style")
 
-                val views = RemoteViews(context.packageName, R.layout.widget_weather)
+                val layoutId = if (isCompact) R.layout.widget_weather_compact else R.layout.widget_weather
+                val views = RemoteViews(context.packageName, layoutId)
 
                 if (hasData) {
-                    populateFromCache(views, prefs)
+                    if (isCompact) {
+                        populateCompactFromCache(views, prefs)
+                    } else {
+                        populateFromCache(views, prefs)
+                    }
                 } else {
-                    populateDefaults(views)
+                    if (isCompact) {
+                        populateCompactDefaults(views)
+                    } else {
+                        populateDefaults(views)
+                    }
                 }
 
                 setClickIntents(context, views, appWidgetId, hasData)
@@ -165,6 +203,38 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_precip_val, "--%")
             views.setTextViewText(R.id.widget_updated, "Tap to open app")
             Log.d(TAG, "Populated defaults (no cached data)")
+        }
+
+        private fun populateCompactFromCache(views: RemoteViews, prefs: SharedPreferences) {
+            val rawLocation = prefs.getString("location_name", "Unknown") ?: "Unknown"
+            views.setTextViewText(R.id.widget_location, truncateLocation(rawLocation))
+            views.setTextViewText(R.id.widget_condition,
+                prefs.getString("condition_label", "--") ?: "--")
+
+            val weatherCode = prefs.getInt("weather_code", 0)
+            views.setTextViewText(R.id.widget_icon, WEATHER_ICONS[weatherCode] ?: "🌡")
+
+            val temp = prefs.getFloat("temp", 0f).roundToInt()
+            views.setTextViewText(R.id.widget_temp, "$temp")
+            views.setTextViewText(R.id.widget_hi,
+                "↑ ${prefs.getFloat("hi_temp", 0f).roundToInt()}°")
+            views.setTextViewText(R.id.widget_lo,
+                "  ↓ ${prefs.getFloat("lo_temp", 0f).roundToInt()}°")
+
+            val updatedAt = prefs.getLong("updated_at", 0L)
+            val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            views.setTextViewText(R.id.widget_updated,
+                "Updated ${timeFormat.format(Date(updatedAt))}")
+        }
+
+        private fun populateCompactDefaults(views: RemoteViews) {
+            views.setTextViewText(R.id.widget_location, "Open app first")
+            views.setTextViewText(R.id.widget_condition, "No data yet")
+            views.setTextViewText(R.id.widget_icon, "🌡")
+            views.setTextViewText(R.id.widget_temp, "--")
+            views.setTextViewText(R.id.widget_hi, "")
+            views.setTextViewText(R.id.widget_lo, "")
+            views.setTextViewText(R.id.widget_updated, "Tap to open app")
         }
 
         /** Create a deep-link intent that opens the app at a specific layer */
