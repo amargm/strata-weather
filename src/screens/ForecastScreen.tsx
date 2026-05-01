@@ -30,13 +30,25 @@ export function ForecastScreen({ daily }: ForecastScreenProps) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>7 Days</Text>
+        <View>
+          <Text style={styles.eyebrow}>Layer 03 · 7-Day</Text>
+          <Text style={styles.title}>7 Days</Text>
+        </View>
         <View style={styles.legend}>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
           <Text style={styles.legendText}>Hi</Text>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.accent2 }]} />
           <Text style={styles.legendText}>Lo</Text>
         </View>
+      </View>
+
+      {/* Column hints */}
+      <View style={styles.colHints}>
+        <Text style={styles.colHint}>Day</Text>
+        <Text style={styles.colHint}></Text>
+        <Text style={styles.colHint}>Temp range</Text>
+        <Text style={styles.colHint}>Hi / Lo</Text>
+        <Text style={styles.colHint}>Rain %</Text>
       </View>
 
       {/* Forecast rows */}
@@ -98,6 +110,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: theme.colors.ink,
   },
+  eyebrow: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 2,
+  },
   legend: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -114,6 +134,21 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: theme.colors.muted,
+  },
+  colHints: {
+    flexDirection: 'row',
+    paddingHorizontal: 28,
+    paddingVertical: 6,
+    justifyContent: 'space-between',
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.faint,
+  },
+  colHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: theme.colors.faint,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   table: {
     paddingTop: 8,

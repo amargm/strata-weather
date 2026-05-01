@@ -36,8 +36,10 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Layer 04 · Deep Data</Text>
-        <Text style={styles.title}>Science & Extremes</Text>
+        <View>
+          <Text style={styles.eyebrow}>Layer 04 · Deep Data</Text>
+          <Text style={styles.title}>Science & Extremes</Text>
+        </View>
       </View>
 
       {/* Science grid */}
@@ -50,7 +52,9 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
           <View style={styles.uvBar}>
             <View style={[styles.uvMarker, { left: `${(uvIndex / 11) * 100}%` }]} />
           </View>
-          <Text style={styles.sub}>SPF 15+ recommended 10–14h</Text>
+          <Text style={styles.sub}>
+            How strong the sun is right now.{'\n'}6+ means sunburn in under 20 min.
+          </Text>
         </View>
 
         {/* Pressure trend */}
@@ -58,7 +62,9 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
           <Text style={styles.label}>Pressure</Text>
           <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel || 0)}</Text>
           <Text style={styles.unit}>hPa · Steady</Text>
-          <Text style={styles.sub}>Current surface level reading</Text>
+          <Text style={styles.sub}>
+            Weight of air above you.{'\n'}Dropping = rain likely. Rising = clearing.
+          </Text>
         </View>
 
         {/* Wet-bulb */}
@@ -67,9 +73,9 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
           <Text style={styles.val}>{Math.round((weather?.dewPoint || 0) + 2)}°</Text>
           <Text style={styles.unit}>°C</Text>
           <Text style={styles.sub}>
-            Dew point {Math.round(weather?.dewPoint || 0)}°C{'\n'}
+            How well your body can cool down.{'\n'}
             Feels {Math.round(weather?.temperatureApparent || 0)}° — 
-            {(weather?.temperatureApparent || 0) < 18 ? ' comfortable' : ' warm'}
+            {(weather?.temperatureApparent || 0) < 18 ? ' comfortable' : ' sweat won\'t evaporate easily'}
           </Text>
         </View>
 
@@ -81,8 +87,7 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
           </Text>
           <Text style={styles.unit}>%</Text>
           <Text style={styles.sub}>
-            Cloud cover {weather?.cloudCover || 0}%{'\n'}
-            Visibility {weather?.visibility || '--'} km
+            Moisture in the air.{'\n'}70%+ feels muggy. 30%- feels dry.
           </Text>
         </View>
       </View>
@@ -92,16 +97,19 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
         <View style={styles.sunCol}>
           <Text style={styles.sunLabel}>Sunrise</Text>
           <Text style={styles.sunVal}>{sunrise}</Text>
+          <Text style={styles.sunHint}>First light</Text>
         </View>
         <View style={styles.sunCol}>
           <Text style={styles.sunLabel}>Sunset</Text>
           <Text style={styles.sunVal}>{sunset}</Text>
+          <Text style={styles.sunHint}>Last light</Text>
         </View>
         <View style={styles.sunCol}>
           <Text style={styles.sunLabel}>Daylight</Text>
           <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)', fontSize: 15 }]}>
             {daylightStr}
           </Text>
+          <Text style={styles.sunHint}>Total sun hours</Text>
         </View>
       </View>
     </ScrollView>
@@ -214,5 +222,11 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.serifBlack,
     fontSize: 18,
     color: theme.colors.paper,
+  },
+  sunHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: 'rgba(240,235,225,0.25)',
+    marginTop: 3,
   },
 });

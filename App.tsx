@@ -171,10 +171,6 @@ export default function App() {
         ))}
       </View>
 
-      {/* Layer label */}
-      <View style={styles.layerLabelWrap}>
-        <Text style={styles.layerLabel}>{LAYER_LABELS[currentLayer]}</Text>
-      </View>
     </View>
   );
 }
@@ -220,9 +216,11 @@ const styles = StyleSheet.create({
   },
   dotsNav: {
     position: 'absolute',
-    right: 14,
-    top: '50%',
-    transform: [{ translateY: -50 }],
+    bottom: 28,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
   },
@@ -233,21 +231,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.muted,
   },
   dotActive: {
-    height: 20,
+    width: 20,
     borderRadius: 3,
     backgroundColor: theme.colors.accent,
   },
-  layerLabelWrap: {
-    position: 'absolute',
-    left: 10,
-    top: '50%',
-    transform: [{ translateY: -10 }, { rotate: '-90deg' }],
-  },
-  layerLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 8,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    color: theme.colors.muted,
-  },
+
 });

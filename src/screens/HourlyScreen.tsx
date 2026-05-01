@@ -38,7 +38,10 @@ export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Hourly</Text>
+        <View>
+          <Text style={styles.eyebrow}>Layer 02 · Hourly</Text>
+          <Text style={styles.title}>Hourly</Text>
+        </View>
         <Text style={styles.subtitle}>Next 24 hours →</Text>
       </View>
 
@@ -93,6 +96,7 @@ export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
             {Math.round(currentWind?.windSpeed || 0)}
             <Text style={styles.windUnitSm}> mph</Text>
           </Text>
+          <Text style={styles.windHint}>Steady average speed near ground</Text>
           <Text style={styles.windDirText}>
             {windDirText(currentWind?.windDirection || 0)} {Math.round(currentWind?.windDirection || 0)}°
           </Text>
@@ -101,12 +105,16 @@ export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
               ▲ Gusts to {Math.round(currentWind?.windGust || 0)} mph
             </Text>
           )}
+          {(currentWind?.windGust || 0) > 0 && (
+            <Text style={styles.windHint}>Brief bursts · can be 2–3× sustained</Text>
+          )}
         </View>
       </View>
 
       {/* Precipitation outlook */}
       <View style={styles.precipOutlook}>
         <Text style={styles.precipLabel}>Precipitation outlook</Text>
+        <Text style={styles.windHint}>Chance of rain or snow in your area</Text>
         <Text style={styles.precipText}>
           {hourly[0]?.values.precipitationProbability || 0}% chance next 2h.{' '}
           Easing to {hourly[4]?.values.precipitationProbability || 0}% by{' '}
@@ -134,6 +142,14 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.serifBlack,
     fontSize: 28,
     color: theme.colors.ink,
+  },
+  eyebrow: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 2,
   },
   subtitle: {
     fontFamily: theme.fonts.mono,
@@ -248,6 +264,12 @@ const styles = StyleSheet.create({
     color: theme.colors.accent,
     marginTop: 2,
     letterSpacing: 0.5,
+  },
+  windHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: theme.colors.faint,
+    marginTop: 3,
   },
   precipOutlook: {
     marginHorizontal: 28,

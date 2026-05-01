@@ -45,6 +45,7 @@ export function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScree
       {/* Top bar */}
       <View style={styles.topBar}>
         <View>
+          <Text style={styles.eyebrow}>Layer 00 · Now</Text>
           <Text style={styles.locationLine}>📍 Current location</Text>
           <Text style={styles.locationName}>{locationName || 'Loading...'}</Text>
         </View>
@@ -57,17 +58,26 @@ export function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScree
       {/* Live strip */}
       <View style={styles.liveStrip}>
         <View style={styles.liveItem}>
-          <Text style={styles.liveVal}>{weather?.humidity || '--'}%</Text>
-          <Text style={styles.liveLabel}>Hum</Text>
-          <View style={styles.liveDot} />
+          <View style={styles.liveRow}>
+            <Text style={styles.liveVal}>{weather?.humidity || '--'}%</Text>
+            <Text style={styles.liveLabel}>Hum</Text>
+            <View style={styles.liveDot} />
+          </View>
+          <Text style={styles.liveHint}>Moisture in air</Text>
         </View>
         <View style={styles.liveItem}>
-          <Text style={styles.liveVal}>{Math.round(weather?.windSpeed || 0)}mph</Text>
-          <Text style={styles.liveLabel}>Wind</Text>
+          <View style={styles.liveRow}>
+            <Text style={styles.liveVal}>{Math.round(weather?.windSpeed || 0)}mph</Text>
+            <Text style={styles.liveLabel}>Wind</Text>
+          </View>
+          <Text style={styles.liveHint}>Ground speed</Text>
         </View>
         <View style={styles.liveItem}>
-          <Text style={styles.liveVal}>UV {weather?.uvIndex || '--'}</Text>
-          <Text style={styles.liveLabel}>Index</Text>
+          <View style={styles.liveRow}>
+            <Text style={styles.liveVal}>UV {weather?.uvIndex || '--'}</Text>
+            <Text style={styles.liveLabel}>Index</Text>
+          </View>
+          <Text style={styles.liveHint}>Sun burn risk</Text>
         </View>
       </View>
 
@@ -146,6 +156,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     zIndex: 2,
   },
+  eyebrow: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 6,
+  },
   locationLine: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
@@ -183,10 +201,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   liveItem: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderTopWidth: 0.5,
     borderTopColor: theme.colors.faint,
+    alignItems: 'flex-end',
+  },
+  liveRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -202,6 +223,12 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: theme.colors.muted,
+  },
+  liveHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: theme.colors.faint,
+    marginTop: 2,
   },
   liveDot: {
     width: 4,

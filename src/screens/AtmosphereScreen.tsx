@@ -48,6 +48,7 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
           label="Humidity"
           value={`${weather?.humidity || '--'}`}
           unit="%"
+          hint="Moisture in air · >70% feels muggy"
           barAnim={barAnims[0]}
           color={theme.colors.accent2}
         />
@@ -55,6 +56,7 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
           label="Pressure"
           value={`${Math.round(weather?.pressureSurfaceLevel || 0)}`}
           unit="hPa · Steady"
+          hint="Air weight · Low = storms likely"
           barAnim={barAnims[1]}
           color={theme.colors.accent}
         />
@@ -62,6 +64,7 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
           label="Cloud Cover"
           value={`${weather?.cloudCover || '--'}`}
           unit="%"
+          hint="Sky coverage · 100% = overcast"
           barAnim={barAnims[2]}
           color={theme.colors.accent2}
         />
@@ -75,11 +78,13 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
           <Text style={styles.cellUnit}>
             Wet-bulb {Math.round((weather?.dewPoint || 0) + 2)}°C
           </Text>
+          <Text style={styles.cellHint}>Temp where fog forms · sticky above 15°</Text>
         </View>
         <View style={[styles.extraCell, { borderRightWidth: 0 }]}>
           <Text style={styles.cellLabel}>Visibility</Text>
           <Text style={styles.extraVal}>{weather?.visibility || '--'} km</Text>
           <Text style={styles.cellUnit}>Current conditions</Text>
+          <Text style={styles.cellHint}>How far you can see clearly</Text>
         </View>
       </View>
 
@@ -98,6 +103,7 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
             ]}
           />
         </View>
+        <Text style={styles.cellHint}>Sun burn risk · 6+ wear sunscreen</Text>
       </View>
 
       {/* Wind gust alert */}
@@ -117,9 +123,9 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
 }
 
 function MetricCell({
-  label, value, unit, barAnim, color,
+  label, value, unit, hint, barAnim, color,
 }: {
-  label: string; value: string; unit: string;
+  label: string; value: string; unit: string; hint: string;
   barAnim: Animated.Value; color: string;
 }) {
   const width = barAnim.interpolate({
@@ -133,6 +139,7 @@ function MetricCell({
       <Text style={styles.cellVal}>{value}</Text>
       <Text style={styles.cellUnit}>{unit}</Text>
       <Animated.View style={[styles.cellBar, { width, backgroundColor: color }]} />
+      <Text style={styles.cellHint}>{hint}</Text>
     </View>
   );
 }
@@ -212,6 +219,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: 'rgba(240,235,225,0.4)',
     marginTop: 3,
+  },
+  cellHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: 'rgba(240,235,225,0.25)',
+    marginTop: 6,
+    lineHeight: 10,
   },
   cellBar: {
     position: 'absolute',
