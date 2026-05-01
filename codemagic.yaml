@@ -19,13 +19,9 @@ workflows:
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
 
-      - name: Generate Gradle Wrapper JAR
+      - name: Set up Gradle
         script: |
           cd android
-          # Generate the wrapper jar if missing (common in CI)
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            gradle wrapper --gradle-version=8.3
-          fi
           chmod +x gradlew
 
       - name: Bundle React Native JS
@@ -71,12 +67,9 @@ workflows:
         script: |
           echo $CM_KEYSTORE | base64 --decode > android/app/release.keystore
 
-      - name: Generate Gradle Wrapper JAR
+      - name: Set up Gradle
         script: |
           cd android
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            gradle wrapper --gradle-version=8.3
-          fi
           chmod +x gradlew
 
       - name: Bundle React Native JS
