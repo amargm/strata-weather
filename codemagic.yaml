@@ -24,16 +24,6 @@ workflows:
           cd android
           chmod +x gradlew
 
-      - name: Bundle React Native JS
-        script: |
-          mkdir -p android/app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
-
       - name: Build Debug APK
         script: |
           cd android
@@ -71,16 +61,6 @@ workflows:
         script: |
           cd android
           chmod +x gradlew
-
-      - name: Bundle React Native JS
-        script: |
-          mkdir -p android/app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
 
       - name: Build Release APK
         script: |

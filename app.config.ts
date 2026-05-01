@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.fieldweather',
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION'],
   },
-  plugins: ['expo-location', 'expo-font'],
+  plugins: ['expo-location', 'expo-font', 'expo-splash-screen'],
   extra: {
     eas: {
       projectId: '', // Set after EAS init
