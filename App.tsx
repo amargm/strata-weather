@@ -112,7 +112,7 @@ export default function App(props: { initialLayer?: number }) {
         duration: 800,
         useNativeDriver: true,
       }).start(() => setShowSplash(false));
-    }, 2500);
+    }, 4000);
     return () => clearTimeout(timer);
   }, []);
 
