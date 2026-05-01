@@ -29,8 +29,8 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
     const targets = [
       weather.humidity / 100,
       weather.cloudCover / 100,
-      (weather.pressureSurfaceLevel - 950) / 100,
-      Math.min(weather.dewPoint / 40, 1),
+      Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
+      Math.max(0, Math.min(weather.dewPoint / 40, 1)),
       Math.min((weather.visibility || 0) / 20, 1),
       Math.min((weather.uvIndex || 0) / 11, 1),
     ];
@@ -107,7 +107,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
         {/* Row 3 */}
         <MetricCell
           label="Visibility"
-          value={`${weather?.visibility ?? '--'}`}
+          value={`${Math.round(weather?.visibility ?? 0)}`}
           unit="km"
           hint="How far you can see clearly right now."
           barAnim={barAnims[4]}
@@ -127,7 +127,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
       </View>
 
       {/* Wind gust alert */}
-      {(weather?.windGust || 0) > 8 && (
+      {(weather?.windGust || 0) > 15 && (
         <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round((weather?.windGust || 0) * 3.6)} kilometers per hour expected`}>
           <Text style={styles.alertIcon} importantForAccessibility="no">⚠</Text>
           <View style={{ flex: 1 }}>

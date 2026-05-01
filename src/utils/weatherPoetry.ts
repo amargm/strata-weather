@@ -30,7 +30,7 @@ export function getExpressiveDescription(
 
   // Heavy rain / freezing rain
   if ([4001, 4201, 6001, 6201].includes(code)) {
-    if (windSpeed > 25) return 'Sheets of rain riding the wind. Hunker down.';
+    if (windSpeed > 7) return 'Sheets of rain riding the wind. Hunker down.';
     if (isNight) return 'Rain hammering the roof. Sleep-worthy weather.';
     return 'Proper rain — the kind that earns an umbrella.';
   }
@@ -63,12 +63,12 @@ export function getExpressiveDescription(
   }
 
   // Strong wind
-  if ([3002].includes(code) || windSpeed > 40) {
+  if ([3002].includes(code) || windSpeed > 11) {
     return 'Wind with real teeth today. Hold onto your hat.';
   }
 
   // Windy
-  if ([3000, 3001].includes(code) || windSpeed > 25) {
+  if ([3000, 3001].includes(code) || windSpeed > 7) {
     if (temp > 25) return 'Warm but breezy. A wind that actually feels good.';
     return 'Blustery out there. Trees are having a conversation.';
   }

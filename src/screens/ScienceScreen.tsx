@@ -50,7 +50,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
           <Text style={[styles.val, { color: theme.colors.accent }]}>{uvIndex}</Text>
           <Text style={styles.unit}>{uvLabel}</Text>
           <View style={styles.uvBar} importantForAccessibility="no">
-            <View style={[styles.uvMarker, { left: `${(uvIndex / 11) * 100}%` }]} />
+            <View style={[styles.uvMarker, { left: `${Math.min(uvIndex / 11, 1) * 100}%` }]} />
           </View>
           <Text style={styles.sub}>
             How strong the sun is right now.{'\n'}6+ means sunburn in under 20 min.
@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     position: 'relative',
     overflow: 'visible',
+    backgroundColor: 'rgba(240,235,225,0.08)',
   },
   uvMarker: {
     position: 'absolute',

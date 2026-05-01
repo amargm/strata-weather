@@ -522,6 +522,8 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.colors.paper,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Friendly error
   errorIcon: {

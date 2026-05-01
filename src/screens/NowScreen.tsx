@@ -115,7 +115,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         ]}
         accessible
         accessibilityRole="text"
-        accessibilityLabel={`Temperature ${Math.round(weather?.temperature || 0)} degrees celsius. Feels like ${Math.round(weather?.temperatureApparent || 0)} degrees. High ${Math.round(highTemp || 0)}, Low ${Math.round(lowTemp || 0)}`}
+        accessibilityLabel={`Temperature ${Math.round(weather?.temperature || 0)} degrees celsius. Feels like ${Math.round(weather?.temperatureApparent || 0)} degrees.${highTemp != null ? ` High ${Math.round(highTemp)},` : ''}${lowTemp != null ? ` Low ${Math.round(lowTemp)}` : ''}`}
         accessibilityLiveRegion="polite"
       >
         <TouchableOpacity activeOpacity={0.9}>
@@ -128,9 +128,9 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           <Text style={styles.tempFeels}>
             Feels like {Math.round(weather?.temperatureApparent || 0)}°
           </Text>
-          <View style={styles.tempRangePill} accessibilityLabel={`High ${Math.round(highTemp || 0)} degrees, Low ${Math.round(lowTemp || 0)} degrees`}>
-            <Text style={styles.rangeHi}>↑ {Math.round(highTemp || 0)}°</Text>
-            <Text style={styles.rangeLo}>↓ {Math.round(lowTemp || 0)}°</Text>
+          <View style={styles.tempRangePill} accessibilityLabel={`High ${highTemp != null ? Math.round(highTemp) : 'unavailable'} degrees, Low ${lowTemp != null ? Math.round(lowTemp) : 'unavailable'} degrees`}>
+            <Text style={styles.rangeHi}>↑ {highTemp != null ? `${Math.round(highTemp)}°` : '--'}</Text>
+            <Text style={styles.rangeLo}>↓ {lowTemp != null ? `${Math.round(lowTemp)}°` : '--'}</Text>
           </View>
         </View>
       </Animated.View>
@@ -138,7 +138,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <View style={styles.nowFooter}>
         <Text style={styles.conditionLong}>
-          {expressiveDescription || `${condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${weather?.visibility ?? '--'} km.`}
+          {expressiveDescription || `${condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
         </Text>
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />
