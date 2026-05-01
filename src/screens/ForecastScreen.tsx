@@ -106,12 +106,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingTop: 52,
+    paddingTop: 20,
     paddingHorizontal: 28,
     paddingBottom: 16,
     borderBottomWidth: 1,

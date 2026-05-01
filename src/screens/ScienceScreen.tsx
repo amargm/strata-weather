@@ -121,10 +121,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ink,
   },
   content: {
-    paddingBottom: 100,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 24,
   },
   header: {
-    paddingTop: 52,
+    paddingTop: 20,
     paddingHorizontal: 28,
     paddingBottom: 20,
     borderBottomWidth: 0.5,
