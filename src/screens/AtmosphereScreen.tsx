@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, Dimensions } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues } from '../types/weather';
+
+const { height: SCREEN_H } = Dimensions.get('window');
 
 interface AtmosphereScreenProps {
   weather: WeatherValues | null;
@@ -9,6 +11,9 @@ interface AtmosphereScreenProps {
 
 export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
   const barAnims = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -25,22 +30,29 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
     if (!weather) return;
     const targets = [
       weather.humidity / 100,
-      (weather.pressureSurfaceLevel - 950) / 100, // normalize ~950-1050
       weather.cloudCover / 100,
+      (weather.pressureSurfaceLevel - 950) / 100,
+      Math.min(weather.dewPoint / 40, 1),
+      Math.min((weather.visibility || 0) / 20, 1),
+      Math.min((weather.uvIndex || 0) / 11, 1),
     ];
     if (reduceMotion) {
       barAnims.forEach((anim, i) => anim.setValue(targets[i]));
       return;
     }
-    Animated.stagger(100, barAnims.map((anim, i) =>
-      Animated.spring(anim, { toValue: targets[i], useNativeDriver: false, damping: 15 })
+    Animated.stagger(80, barAnims.map((anim, i) =>
+      Animated.spring(anim, { toValue: targets[i], useNativeDriver: false, damping: 18 })
     )).start();
   }, [weather, reduceMotion]);
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  const uvIndex = weather?.uvIndex || 0;
+  const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
+  const pressureTrend = 'Steady';
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
@@ -53,103 +65,110 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
         </View>
       </View>
 
-      {/* Metrics Grid */}
-      <View style={styles.metricsGrid} accessibilityRole="summary">
+      {/* 2-column metric grid */}
+      <View style={styles.grid}>
+        {/* Row 1 */}
         <MetricCell
           label="Humidity"
-          value={`${weather?.humidity || '--'}`}
+          value={`${weather?.humidity ?? '--'}`}
           unit="%"
-          hint="Moisture in air · >70% feels muggy"
+          hint="Moisture in the air. Above 70% feels muggy, below 30% feels dry."
           barAnim={barAnims[0]}
           color={theme.colors.accent2}
-        />
-        <MetricCell
-          label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel || 0)}`}
-          unit="hPa · Steady"
-          hint="Air weight · Low = storms likely"
-          barAnim={barAnims[1]}
-          color={theme.colors.accent}
+          isLeft
         />
         <MetricCell
           label="Cloud Cover"
-          value={`${weather?.cloudCover || '--'}`}
+          value={`${weather?.cloudCover ?? '--'}`}
           unit="%"
-          hint="Sky coverage · 100% = overcast"
-          barAnim={barAnims[2]}
+          hint="How much sky is hidden. 100% is full overcast."
+          barAnim={barAnims[1]}
           color={theme.colors.accent2}
+          isLeft={false}
         />
-      </View>
 
-      {/* Extra row */}
-      <View style={styles.extraRow}>
-        <View style={styles.extraCell} accessible accessibilityLabel={`Dew Point ${Math.round(weather?.dewPoint || 0)} degrees celsius. Wet-bulb ${Math.round((weather?.dewPoint || 0) + 2)} degrees. Temperature where fog forms, sticky above 15 degrees`} accessibilityRole="text">
-          <Text style={styles.cellLabel}>Dew Point</Text>
-          <Text style={styles.extraVal}>{Math.round(weather?.dewPoint || 0)}°C</Text>
-          <Text style={styles.cellUnit}>
-            Wet-bulb {Math.round((weather?.dewPoint || 0) + 2)}°C
-          </Text>
-          <Text style={styles.cellHint}>Temp where fog forms · sticky above 15°</Text>
-        </View>
-        <View style={[styles.extraCell, { borderRightWidth: 0 }]} accessible accessibilityLabel={`Visibility ${weather?.visibility || 'unknown'} kilometers. How far you can see clearly`} accessibilityRole="text">
-          <Text style={styles.cellLabel}>Visibility</Text>
-          <Text style={styles.extraVal}>{weather?.visibility || '--'} km</Text>
-          <Text style={styles.cellUnit}>Current conditions</Text>
-          <Text style={styles.cellHint}>How far you can see clearly</Text>
-        </View>
-      </View>
+        {/* Row 2 */}
+        <MetricCell
+          label="Pressure"
+          value={`${Math.round(weather?.pressureSurfaceLevel || 0)}`}
+          unit={`hPa · ${pressureTrend}`}
+          hint="Weight of air above you. Dropping means storms likely."
+          barAnim={barAnims[2]}
+          color={theme.colors.accent}
+          isLeft
+        />
+        <MetricCell
+          label="Dew Point"
+          value={`${Math.round(weather?.dewPoint || 0)}°`}
+          unit={`Wet-bulb ${Math.round((weather?.dewPoint || 0) + 2)}°C`}
+          hint="Temperature where fog forms. Sticky above 15°."
+          barAnim={barAnims[3]}
+          color="rgba(240,235,225,0.4)"
+          isLeft={false}
+        />
 
-      {/* UV Index block */}
-      <View style={styles.uvBlock} accessible accessibilityLabel={`UV Index ${weather?.uvIndex || 0}, ${(weather?.uvIndex || 0) <= 2 ? 'Low' : (weather?.uvIndex || 0) <= 5 ? 'Moderate' : 'High'}. Sun burn risk, 6 plus wear sunscreen`} accessibilityRole="text">
-        <Text style={styles.cellLabel}>UV Index</Text>
-        <Text style={styles.uvVal}>{weather?.uvIndex || 0}</Text>
-        <Text style={styles.cellUnit}>
-          {(weather?.uvIndex || 0) <= 2 ? 'Low' : (weather?.uvIndex || 0) <= 5 ? 'Moderate' : 'High'}
-        </Text>
-        <View style={styles.uvBar}>
-          <View
-            style={[
-              styles.uvMarker,
-              { left: `${Math.min(((weather?.uvIndex || 0) / 11) * 100, 100)}%` },
-            ]}
-          />
-        </View>
-        <Text style={styles.cellHint}>Sun burn risk · 6+ wear sunscreen</Text>
+        {/* Row 3 */}
+        <MetricCell
+          label="Visibility"
+          value={`${weather?.visibility ?? '--'}`}
+          unit="km"
+          hint="How far you can see clearly right now."
+          barAnim={barAnims[4]}
+          color="rgba(240,235,225,0.4)"
+          isLeft
+        />
+        <MetricCell
+          label="UV Index"
+          value={`${uvIndex}`}
+          unit={uvLabel}
+          hint={uvIndex >= 6 ? 'Wear sunscreen — burns in under 20 min.' : 'Sun exposure is manageable right now.'}
+          barAnim={barAnims[5]}
+          color={theme.colors.accent}
+          isLeft={false}
+          valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+        />
       </View>
 
       {/* Wind gust alert */}
       {(weather?.windGust || 0) > 30 && (
         <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round(weather?.windGust || 0)} miles per hour expected`}>
-          <Text style={styles.alertIcon} importantForAccessibility="no">!</Text>
-          <View>
+          <Text style={styles.alertIcon} importantForAccessibility="no">⚠</Text>
+          <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>
-              Gusts to {Math.round(weather?.windGust || 0)} mph expected
+              Gusts to {Math.round(weather?.windGust || 0)} mph expected. Secure loose objects.
             </Text>
           </View>
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 });
 
 function MetricCell({
-  label, value, unit, hint, barAnim, color,
+  label, value, unit, hint, barAnim, color, isLeft, valueColor,
 }: {
   label: string; value: string; unit: string; hint: string;
-  barAnim: Animated.Value; color: string;
+  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string;
 }) {
-  const width = barAnim.interpolate({
+  const barWidth = barAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
   return (
-    <View style={styles.cell} accessible accessibilityRole="text" accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}>
+    <View
+      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}
+    >
       <Text style={styles.cellLabel}>{label}</Text>
-      <Text style={styles.cellVal}>{value}</Text>
+      <Text style={[styles.cellVal, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
       <Text style={styles.cellUnit}>{unit}</Text>
-      <Animated.View style={[styles.cellBar, { width, backgroundColor: color }]} importantForAccessibility="no" />
+      <View style={styles.barTrack}>
+        <Animated.View style={[styles.barFill, { width: barWidth, backgroundColor: color }]} importantForAccessibility="no" />
+      </View>
       <Text style={styles.cellHint}>{hint}</Text>
     </View>
   );
@@ -160,27 +179,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.ink,
   },
+  content: {
+    minHeight: SCREEN_H,
+    paddingBottom: 40,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
     paddingTop: 52,
     paddingHorizontal: 28,
-    paddingBottom: 24,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(240,235,225,0.1)',
+    paddingBottom: 16,
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.55)',
+    color: 'rgba(240,235,225,0.5)',
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
     fontSize: 28,
     color: theme.colors.paper,
+    marginTop: 4,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -189,132 +211,101 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     letterSpacing: 1,
-    color: 'rgba(240,235,225,0.55)',
+    color: 'rgba(240,235,225,0.5)',
   },
   updatedTime: {
     fontFamily: theme.fonts.mono,
-    fontSize: 12,
-    color: 'rgba(240,235,225,0.6)',
+    fontSize: 13,
+    color: 'rgba(240,235,225,0.7)',
     marginTop: 2,
   },
-  metricsGrid: {
+
+  /* ---- 2-column grid ---- */
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(240,235,225,0.1)',
-    marginTop: 28,
+    borderTopColor: 'rgba(240,235,225,0.08)',
   },
   cell: {
-    flex: 1,
-    padding: 16,
-    borderRightWidth: 0.5,
-    borderRightColor: 'rgba(240,235,225,0.1)',
-    position: 'relative',
-    overflow: 'hidden',
+    width: '50%',
+    paddingVertical: 20,
+    paddingHorizontal: 22,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(240,235,225,0.08)',
   },
+  cellLeft: {
+    borderRightWidth: 0.5,
+    borderRightColor: 'rgba(240,235,225,0.08)',
+  },
+  cellRight: {},
   cellLabel: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    letterSpacing: 1.8,
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.55)',
-    marginBottom: 8,
+    color: 'rgba(240,235,225,0.5)',
+    marginBottom: 10,
   },
   cellVal: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 26,
+    fontSize: 34,
     color: theme.colors.paper,
-    lineHeight: 26,
+    lineHeight: 36,
   },
   cellUnit: {
     fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    color: 'rgba(240,235,225,0.4)',
-    marginTop: 3,
+    fontSize: 11,
+    color: 'rgba(240,235,225,0.55)',
+    marginTop: 4,
+  },
+  barTrack: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(240,235,225,0.06)',
+    marginTop: 14,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   cellHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.55)',
-    marginTop: 6,
-    lineHeight: 14,
-  },
-  cellBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    height: 2,
-  },
-  extraRow: {
-    flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(240,235,225,0.1)',
-  },
-  extraCell: {
-    flex: 1,
-    padding: 14,
-    borderRightWidth: 0.5,
-    borderRightColor: 'rgba(240,235,225,0.1)',
-  },
-  extraVal: {
-    fontFamily: theme.fonts.serifBlack,
-    fontSize: 22,
-    color: theme.colors.paper,
-  },
-  uvBlock: {
-    padding: 18,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(240,235,225,0.1)',
-  },
-  uvVal: {
-    fontFamily: theme.fonts.serifBlack,
-    fontSize: 32,
-    color: theme.colors.accent,
-  },
-  uvBar: {
-    height: 3,
-    borderRadius: 2,
+    fontSize: 11,
+    color: 'rgba(240,235,225,0.45)',
     marginTop: 10,
-    backgroundColor: 'transparent',
-    overflow: 'visible',
-    // Gradient approximated with a background
-    // In production use react-native-linear-gradient
-    borderWidth: 0,
+    lineHeight: 16,
   },
-  uvMarker: {
-    position: 'absolute',
-    top: -4,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: theme.colors.paper,
-  },
+
+  /* ---- Wind alert ---- */
   alertStrip: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    backgroundColor: 'rgba(196,65,28,0.15)',
+    marginHorizontal: 22,
+    marginTop: 20,
+    backgroundColor: 'rgba(196,65,28,0.12)',
     borderWidth: 0.5,
-    borderColor: 'rgba(196,65,28,0.4)',
-    borderRadius: 2,
-    padding: 10,
+    borderColor: 'rgba(196,65,28,0.35)',
+    borderRadius: 4,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   alertIcon: {
-    fontFamily: theme.fonts.serifBlack,
-    fontSize: 20,
-    color: theme.colors.accent,
+    fontSize: 22,
   },
   alertTitle: {
     fontFamily: theme.fonts.monoBold,
-    fontSize: 10,
+    fontSize: 11,
     color: theme.colors.paper,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   alertBody: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.7)',
-    marginTop: 2,
+    fontSize: 11,
+    color: 'rgba(240,235,225,0.65)',
+    marginTop: 3,
+    lineHeight: 16,
   },
 });
