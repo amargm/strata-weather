@@ -106,13 +106,21 @@ export default function App(props: { initialLayer?: number }) {
   // --- Splash screen (show on every app open) ---
   const [showSplash, setShowSplash] = useState(true);
   const splashOpacity = useRef(new RNAnimated.Value(1)).current;
+  const splashScale = useRef(new RNAnimated.Value(1)).current;
   useEffect(() => {
     const timer = setTimeout(() => {
-      RNAnimated.timing(splashOpacity, {
-        toValue: 0,
-        duration: 800,
-        useNativeDriver: true,
-      }).start(() => setShowSplash(false));
+      RNAnimated.parallel([
+        RNAnimated.timing(splashScale, {
+          toValue: 1.15,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(splashOpacity, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setShowSplash(false));
     }, 4000);
     return () => clearTimeout(timer);
   }, []);
@@ -346,7 +354,19 @@ export default function App(props: { initialLayer?: number }) {
     );
   }
 
-  if ((locLoading || weatherLoading) && !data && !showSplash) {
+  // Show splash as full-screen takeover — always first thing user sees
+  if (showSplash) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
+        <RNAnimated.View style={[styles.splashFull, { opacity: splashOpacity, transform: [{ scale: splashScale }] }]}>
+          <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
+        </RNAnimated.View>
+      </View>
+    );
+  }
+
+  if ((locLoading || weatherLoading) && !data) {
     return (
       <View style={styles.loadingContainer} accessible accessibilityRole="progressbar" accessibilityLabel="Loading weather data">
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
@@ -356,7 +376,7 @@ export default function App(props: { initialLayer?: number }) {
   }
 
   // --- Friendly error screen ---
-  if (error && !data && !showSplash) {
+  if (error && !data) {
     const { title, body } = friendlyError(error);
     return (
       <View style={styles.loadingContainer} accessible accessibilityRole="alert">
@@ -487,13 +507,6 @@ export default function App(props: { initialLayer?: number }) {
         </RNAnimated.View>
       )}
 
-      {/* Splash screen overlay */}
-      {showSplash && (
-        <RNAnimated.View style={[styles.splashOverlay, { opacity: splashOpacity }]}>
-          <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
-        </RNAnimated.View>
-      )}
-
     </View>
   );
 }
@@ -576,10 +589,9 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     letterSpacing: 0.5,
   },
-  splashOverlay: {
-    ...StyleSheet.absoluteFillObject,
+  splashFull: {
+    flex: 1,
     backgroundColor: theme.colors.paper,
-    zIndex: 100,
   },
 
 });
