@@ -1,6 +1,6 @@
 workflows:
   android-debug:
-    name: Android Debug Build
+    name: Strata Android Debug Build
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
@@ -9,7 +9,7 @@ workflows:
       groups:
         - weather_api  # Contains WEATHER_API_KEY
       vars:
-        PACKAGE_NAME: "com.fieldweather"
+        PACKAGE_NAME: "com.strataweather"
     scripts:
       - name: Install npm dependencies
         script: |
@@ -43,7 +43,7 @@ workflows:
       - android/app/build/outputs/**/*.apk
 
   android-release:
-    name: Android Release Build
+    name: Strata Android Release Build
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
@@ -53,7 +53,7 @@ workflows:
         - weather_api        # WEATHER_API_KEY
         - keystore_credentials  # CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
       vars:
-        PACKAGE_NAME: "com.fieldweather"
+        PACKAGE_NAME: "com.strataweather"
     scripts:
       - name: Install npm dependencies
         script: |
