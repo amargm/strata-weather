@@ -412,6 +412,7 @@ export default function App(props: { initialLayer?: number }) {
                 lowTemp={lowTemp}
                 expressiveDescription={expressiveDesc}
                 seasonalColors={seasonalColors}
+                onRefresh={handleRefresh}
               />
             </ErrorBoundary>
           </Animated.View>

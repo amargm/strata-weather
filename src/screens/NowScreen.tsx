@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   Animated,
   TouchableOpacity,
   AccessibilityInfo,
+  Dimensions,
+  Easing,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
 import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 interface NowScreenProps {
   weather: WeatherValues | null;
@@ -20,9 +24,10 @@ interface NowScreenProps {
   lowTemp?: number;
   expressiveDescription?: string;
   seasonalColors?: { blobColor1: string; blobColor2: string; accentTint: string };
+  onRefresh?: () => void;
 }
 
-export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors }: NowScreenProps) {
+export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh }: NowScreenProps) {
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -33,6 +38,13 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   const tempAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
+
+  // Refresh animation state
+  const [refreshing, setRefreshing] = useState(false);
+  const rippleScale = useRef(new Animated.Value(0)).current;
+  const rippleOpacity = useRef(new Animated.Value(0)).current;
+  const contentFade = useRef(new Animated.Value(1)).current;
+  const refreshBtnSpin = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (reduceMotion) {
@@ -45,6 +57,87 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 15 }),
     ]).start();
   }, [reduceMotion]);
+
+  const handleRefresh = useCallback(() => {
+    if (refreshing || !onRefresh) return;
+    setRefreshing(true);
+
+    // Reset
+    rippleScale.setValue(0);
+    rippleOpacity.setValue(1);
+    contentFade.setValue(1);
+    refreshBtnSpin.setValue(0);
+
+    if (reduceMotion) {
+      onRefresh();
+      setRefreshing(false);
+      return;
+    }
+
+    // Phase 1: Button spin + ripple expands from bottom-right
+    Animated.parallel([
+      Animated.timing(refreshBtnSpin, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(rippleScale, {
+        toValue: 1,
+        duration: 700,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.delay(200),
+        Animated.timing(contentFade, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start(() => {
+      // Trigger the actual refresh
+      onRefresh();
+
+      // Phase 2: Ripple fades out, content fades back in
+      Animated.sequence([
+        Animated.delay(300),
+        Animated.parallel([
+          Animated.timing(rippleOpacity, {
+            toValue: 0,
+            duration: 500,
+            easing: Easing.in(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentFade, {
+            toValue: 1,
+            duration: 600,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        setRefreshing(false);
+        rippleScale.setValue(0);
+        rippleOpacity.setValue(1);
+      });
+    });
+  }, [refreshing, onRefresh, reduceMotion]);
+
+  // Ripple transform — expands from bottom-right corner of the live strip area
+  const maxRadius = Math.sqrt(SCREEN_W * SCREEN_W + SCREEN_H * SCREEN_H);
+  const rippleTransform = [{
+    scale: rippleScale.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, maxRadius / 30], // 30 is half the initial ripple size (60/2)
+    }),
+  }];
+
+  const spinRotation = refreshBtnSpin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const now = new Date();
   const dateStr = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
@@ -106,13 +199,47 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Sun exposure</Text>
         </View>
+
+        {/* Refresh button */}
+        <TouchableOpacity
+          style={styles.refreshBtn}
+          onPress={handleRefresh}
+          activeOpacity={0.7}
+          disabled={refreshing}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Refresh weather data"
+          accessibilityState={{ busy: refreshing }}
+        >
+          <Animated.Text
+            style={[
+              styles.refreshIcon,
+              { transform: [{ rotate: spinRotation }] },
+            ]}
+          >
+            ↻
+          </Animated.Text>
+          <Text style={styles.refreshLabel}>Refresh</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Giant temp */}
+      {/* Refresh ripple overlay */}
+      <Animated.View
+        style={[
+          styles.rippleOverlay,
+          {
+            opacity: rippleOpacity,
+            transform: rippleTransform,
+          },
+        ]}
+        pointerEvents="none"
+      />
+
+      {/* Giant temp — wrapped in contentFade */}
       <Animated.View
         style={[
           styles.tempStage,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          { opacity: Animated.multiply(fadeAnim, contentFade), transform: [{ translateY: slideAnim }] },
         ]}
         accessible
         accessibilityRole="text"
@@ -344,5 +471,35 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: theme.colors.muted,
+  },
+  refreshBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderTopWidth: 0.5,
+    borderTopColor: theme.colors.faint,
+    gap: 3,
+  },
+  refreshIcon: {
+    fontSize: 18,
+    color: theme.colors.ink,
+    fontWeight: '600',
+  },
+  refreshLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+  },
+  rippleOverlay: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.ink,
+    right: 0,
+    top: '55%',
+    zIndex: 10,
   },
 });
