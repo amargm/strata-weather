@@ -537,8 +537,7 @@ const styles = StyleSheet.create({
   navContainer: {
     position: 'absolute',
     right: 16,
-    top: '50%',
-    transform: [{ translateY: -40 }],
+    bottom: 40,
     alignItems: 'center',
   },
   dotsRow: {
