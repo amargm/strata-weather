@@ -3,11 +3,10 @@ import { WeatherData, TimelineInterval, DailyInterval, LocationCoords } from '..
 import { NativeModules, Platform } from 'react-native';
 
 // API key is injected at build time via BuildConfig (Android)
-// It is NOT hardcoded in the source
+// Exposed to JS via the AppConfig native module
 function getApiKey(): string {
   if (Platform.OS === 'android') {
-    // Access BuildConfig.WEATHER_API_KEY injected at build time
-    return (NativeModules?.BuildConfig?.WEATHER_API_KEY as string) || '';
+    return (NativeModules?.AppConfig?.WEATHER_API_KEY as string) || '';
   }
   return '';
 }

@@ -38,7 +38,7 @@ import { theme } from './src/utils/theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const LAYER_LABELS = ['Now', 'Atmosphere', 'Hourly', '7-Day', 'Deep Data'];
 
@@ -81,7 +81,7 @@ export default function App() {
 
   if (!fontsLoaded) return null;
 
-  SplashScreen.hideAsync();
+  SplashScreen.hideAsync().catch(() => {});
 
   if (locLoading || weatherLoading) {
     return (
