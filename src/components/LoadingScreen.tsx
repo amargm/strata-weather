@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Easing, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing, AccessibilityInfo, TouchableOpacity } from 'react-native';
 import { theme } from '../utils/theme';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -31,13 +31,19 @@ const TIPS = [
 interface Props {
   tipIndex: number;
   tipFade: Animated.Value;
+  /** When set, shows error state with looping animation */
+  errorMessage?: string;
+  /** Technical error detail (e.g. "429 Too Many Requests") */
+  errorDetail?: string;
+  /** Called when user taps exit in error state */
+  onExit?: () => void;
 }
 
 /**
  * Animated loading screen with pulsing concentric rings (atmospheric strata),
  * floating particles, and a breathing center orb.
  */
-export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
+export const LoadingScreen = React.memo(({ tipIndex, tipFade, errorMessage, errorDetail, onExit }: Props) => {
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -270,7 +276,7 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
       </View>
 
       {/* Brand + tip text */}
-      <View style={styles.textArea} accessible accessibilityRole="text" accessibilityLabel={`Strata, Layered Weather. ${TIPS[tipIndex]}`}>
+      <View style={styles.textArea} accessible accessibilityRole="text" accessibilityLabel={errorMessage ? `Error: ${errorMessage}` : `Strata, Layered Weather. ${TIPS[tipIndex]}`}>
         <Animated.Text
           style={[
             styles.brandName,
@@ -282,9 +288,29 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
         <Animated.Text style={[styles.brandSub, { opacity: subtitleOpacity }]}>
           Layered Weather
         </Animated.Text>
-        <Animated.Text style={[styles.tipText, { opacity: tipFade }]} accessibilityLiveRegion="polite">
-          {TIPS[tipIndex]}
-        </Animated.Text>
+        {errorMessage ? (
+          <View style={styles.errorArea}>
+            <Text style={styles.errorPoetry}>{errorMessage}</Text>
+            {errorDetail ? (
+              <Text style={styles.errorTechnical}>{errorDetail}</Text>
+            ) : null}
+            {onExit ? (
+              <TouchableOpacity
+                onPress={onExit}
+                style={styles.exitBtn}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Exit app"
+              >
+                <Text style={styles.exitText}>Exit</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : (
+          <Animated.Text style={[styles.tipText, { opacity: tipFade }]} accessibilityLiveRegion="polite">
+            {TIPS[tipIndex]}
+          </Animated.Text>
+        )}
       </View>
     </View>
   );
@@ -348,5 +374,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.muted,
     marginTop: 28,
+  },
+  errorArea: {
+    marginTop: 24,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorPoetry: {
+    fontFamily: theme.fonts.serifItalic,
+    fontSize: 15,
+    color: theme.colors.ink,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  errorTechnical: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginTop: 12,
+    letterSpacing: 0.3,
+  },
+  exitBtn: {
+    marginTop: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    borderWidth: 1,
+    borderColor: theme.colors.ink,
+    borderRadius: 2,
+  },
+  exitText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: theme.colors.ink,
   },
 });

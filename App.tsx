@@ -10,6 +10,7 @@ import {
   Platform,
   Animated as RNAnimated,
   Linking,
+  BackHandler,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -372,24 +373,21 @@ export default function App(props: { initialLayer?: number }) {
     );
   }
 
-  // --- Friendly error screen ---
+  // --- Friendly error screen (animated splash with error text) ---
   if (error && !data) {
     const { title, body } = friendlyError(error);
+    const errorPoetry = 'my eyes unable to read the sky…';
+    const technicalDetail = `${title} — ${body}`;
     return (
       <View style={styles.loadingContainer} accessible accessibilityRole="alert">
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
-        <Text style={styles.errorIcon} importantForAccessibility="no">⚠</Text>
-        <Text style={styles.errorTitle} accessibilityRole="header">{title}</Text>
-        <Text style={styles.errorBody}>{body}</Text>
-        <TouchableOpacity
-          onPress={handleRefresh}
-          style={styles.retryBtn}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Try again to load weather data"
-        >
-          <Text style={styles.retryText}>Try again</Text>
-        </TouchableOpacity>
+        <LoadingScreen
+          tipIndex={tipIndex}
+          tipFade={tipFade}
+          errorMessage={errorPoetry}
+          errorDetail={technicalDetail}
+          onExit={() => BackHandler.exitApp()}
+        />
       </View>
     );
   }
@@ -510,40 +508,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.paper,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  // Friendly error
-  errorIcon: {
-    fontSize: 36,
-    marginBottom: 16,
-  },
-  errorTitle: {
-    fontFamily: theme.fonts.serifBold,
-    fontSize: 20,
-    color: theme.colors.ink,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  errorBody: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 12,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  retryBtn: {
-    marginTop: 28,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderWidth: 1,
-    borderColor: theme.colors.ink,
-    borderRadius: 2,
-  },
-  retryText: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: theme.colors.ink,
   },
   navContainer: {
     position: 'absolute',

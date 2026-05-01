@@ -10,6 +10,11 @@ import expo.modules.ReactActivityDelegateWrapper
 class MainActivity : ReactActivity() {
     override fun getMainComponentName(): String = "StrataWeather"
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.AppTheme)
+        super.onCreate(savedInstanceState)
+    }
+
     override fun createReactActivityDelegate(): ReactActivityDelegate =
         ReactActivityDelegateWrapper(this, BuildConfig.IS_NEW_ARCHITECTURE_ENABLED,
             object : DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled) {
