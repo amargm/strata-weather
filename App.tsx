@@ -10,10 +10,7 @@ import {
 } from 'react-native';
 import Animated, {
   useSharedValue,
-  useAnimatedStyle,
   useAnimatedScrollHandler,
-  interpolate,
-  withSpring,
 } from 'react-native-reanimated';
 import { useFonts } from 'expo-font';
 import {
@@ -26,7 +23,6 @@ import {
   SpaceMono_400Regular,
   SpaceMono_700Bold,
 } from '@expo-google-fonts/space-mono';
-import * as SplashScreen from 'expo-splash-screen';
 import { useLocation } from './src/hooks/useLocation';
 import { useWeather } from './src/hooks/useWeather';
 import { NowScreen } from './src/screens/NowScreen';
@@ -37,8 +33,6 @@ import { ScienceScreen } from './src/screens/ScienceScreen';
 import { theme } from './src/utils/theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const LAYER_LABELS = ['Now', 'Atmosphere', 'Hourly', '7-Day', 'Deep Data'];
 
@@ -80,8 +74,6 @@ export default function App() {
   };
 
   if (!fontsLoaded) return null;
-
-  SplashScreen.hideAsync().catch(() => {});
 
   if (locLoading || weatherLoading) {
     return (

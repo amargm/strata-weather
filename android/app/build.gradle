@@ -4,8 +4,8 @@ apply plugin: "com.facebook.react"
 apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")
 
 react {
-    // Force JS bundling for all build types (no dev server dependency)
-    debuggableVariants = []
+    // Debuggable variants use Metro in dev, but CI sets useDeveloperSupport=false
+    // so the pre-bundled JS from assets will be used instead
 }
 
 def enableProguardInReleaseBuilds = false
