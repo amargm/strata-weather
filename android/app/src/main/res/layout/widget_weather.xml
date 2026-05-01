@@ -5,10 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="14dp"
     android:background="@drawable/widget_bg"
-    android:clipChildren="true"
-    android:clipToPadding="true">
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
     <!-- Top row: Location + Condition icon -->
     <LinearLayout
@@ -74,25 +74,24 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="6dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
         android:background="#1A0f0e0c" />
 
-    <!-- Temperature row — uses weight to fill available space -->
+    <!-- Temperature row -->
     <LinearLayout
         android:id="@+id/widget_temp_row"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical|bottom">
+        android:gravity="center_vertical">
 
         <TextView
             android:id="@+id/widget_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--"
-            android:textSize="48sp"
+            android:textSize="42sp"
             android:textColor="#0f0e0c"
             android:textStyle="bold"
             android:includeFontPadding="false"
@@ -106,15 +105,14 @@
             android:textSize="14sp"
             android:textColor="#8a8070"
             android:fontFamily="monospace"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="6dp" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:gravity="end"
-            android:layout_marginBottom="8dp">
+            android:gravity="end">
 
             <TextView
                 android:id="@+id/widget_feels"
@@ -156,8 +154,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="6dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
         android:background="#1A0f0e0c" />
 
     <!-- Stats row -->
@@ -293,7 +291,7 @@
         android:textColor="#8a8070"
         android:fontFamily="monospace"
         android:gravity="end"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:letterSpacing="0.1" />
 
 </LinearLayout>

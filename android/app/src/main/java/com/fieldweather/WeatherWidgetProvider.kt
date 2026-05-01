@@ -133,15 +133,18 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     }
                 }
 
-                setClickIntents(context, views, appWidgetId, hasData)
+                setClickIntents(context, views, appWidgetId, hasData, isCompact)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
                 Log.d(TAG, "Widget $appWidgetId updated successfully")
             } catch (t: Throwable) {
                 Log.e(TAG, "Error updating widget $appWidgetId", t)
                 try {
-                    val views = RemoteViews(context.packageName, R.layout.widget_weather)
-                    populateDefaults(views)
-                    setClickIntents(context, views, appWidgetId, false)
+                    val style = WidgetConfigActivity.getWidgetStyle(context, appWidgetId)
+                    val fallbackCompact = style == WidgetConfigActivity.STYLE_COMPACT
+                    val fallbackLayout = if (fallbackCompact) R.layout.widget_weather_compact else R.layout.widget_weather
+                    val views = RemoteViews(context.packageName, fallbackLayout)
+                    if (fallbackCompact) populateCompactDefaults(views) else populateDefaults(views)
+                    setClickIntents(context, views, appWidgetId, false, fallbackCompact)
                     appWidgetManager.updateAppWidget(appWidgetId, views)
                 } catch (t2: Throwable) {
                     Log.e(TAG, "Even error state failed", t2)
@@ -245,7 +248,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun setClickIntents(context: Context, views: RemoteViews, appWidgetId: Int, hasData: Boolean) {
+        private fun setClickIntents(context: Context, views: RemoteViews, appWidgetId: Int, hasData: Boolean, isCompact: Boolean) {
             if (hasData) {
                 // Tap temp area → Now layer (0)
                 val nowIntent = makeDeepLinkIntent(context, 0)
@@ -264,27 +267,30 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_icon, pendingAtmos)
                 views.setOnClickPendingIntent(R.id.widget_condition, pendingAtmos)
 
-                // Tap humidity cell → Atmosphere layer (1)
-                views.setOnClickPendingIntent(R.id.widget_humidity_cell, pendingAtmos)
+                // Full-layout-only click targets
+                if (!isCompact) {
+                    // Tap humidity cell → Atmosphere layer (1)
+                    views.setOnClickPendingIntent(R.id.widget_humidity_cell, pendingAtmos)
 
-                // Tap wind cell → Hourly layer (2) for wind detail
-                val hourlyIntent = makeDeepLinkIntent(context, 2)
-                val pendingHourly = PendingIntent.getActivity(
-                    context, appWidgetId * 10 + 2, hourlyIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(R.id.widget_wind_cell, pendingHourly)
+                    // Tap wind cell → Hourly layer (2) for wind detail
+                    val hourlyIntent = makeDeepLinkIntent(context, 2)
+                    val pendingHourly = PendingIntent.getActivity(
+                        context, appWidgetId * 10 + 2, hourlyIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(R.id.widget_wind_cell, pendingHourly)
 
-                // Tap precip cell → Hourly layer (2) for precip outlook
-                views.setOnClickPendingIntent(R.id.widget_precip_cell, pendingHourly)
+                    // Tap precip cell → Hourly layer (2) for precip outlook
+                    views.setOnClickPendingIntent(R.id.widget_precip_cell, pendingHourly)
 
-                // Tap UV cell → Science layer (4) for UV detail
-                val scienceIntent = makeDeepLinkIntent(context, 4)
-                val pendingScience = PendingIntent.getActivity(
-                    context, appWidgetId * 10 + 4, scienceIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(R.id.widget_uv_cell, pendingScience)
+                    // Tap UV cell → Science layer (4) for UV detail
+                    val scienceIntent = makeDeepLinkIntent(context, 4)
+                    val pendingScience = PendingIntent.getActivity(
+                        context, appWidgetId * 10 + 4, scienceIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(R.id.widget_uv_cell, pendingScience)
+                }
 
                 // Tap widget body (fallback) → Now
                 views.setOnClickPendingIntent(R.id.widget_root, pendingNow)

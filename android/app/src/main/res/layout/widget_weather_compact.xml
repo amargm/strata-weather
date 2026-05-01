@@ -6,10 +6,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="12dp"
+    android:padding="8dp"
     android:background="@drawable/widget_bg"
-    android:clipChildren="true"
-    android:clipToPadding="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:gravity="center">
 
     <!-- Location -->
@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Loading..."
-        android:textSize="11sp"
+        android:textSize="10sp"
         android:textColor="#8a8070"
         android:textStyle="bold"
         android:fontFamily="monospace"
@@ -33,23 +33,23 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginTop="4dp">
+        android:layout_marginTop="2dp">
 
         <TextView
             android:id="@+id/widget_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text=""
-            android:textSize="28sp"
+            android:textSize="22sp"
             android:includeFontPadding="false"
-            android:layout_marginEnd="6dp" />
+            android:layout_marginEnd="4dp" />
 
         <TextView
             android:id="@+id/widget_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--"
-            android:textSize="40sp"
+            android:textSize="32sp"
             android:textColor="#0f0e0c"
             android:textStyle="bold"
             android:includeFontPadding="false"
@@ -60,7 +60,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="°"
-            android:textSize="18sp"
+            android:textSize="14sp"
             android:textColor="#8a8070"
             android:fontFamily="monospace" />
     </LinearLayout>
@@ -71,19 +71,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="--"
-        android:textSize="12sp"
+        android:textSize="10sp"
         android:textColor="#c4411c"
         android:textStyle="italic"
         android:maxLines="1"
         android:ellipsize="end"
-        android:layout_marginTop="2dp" />
+        android:layout_marginTop="1dp" />
 
     <!-- Hi/Lo -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="4dp">
+        android:layout_marginTop="2dp">
 
         <TextView
             android:id="@+id/widget_hi"
@@ -114,7 +114,7 @@
         android:textColor="#8a8070"
         android:fontFamily="monospace"
         android:gravity="center"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:letterSpacing="0.1" />
 
 </LinearLayout>
