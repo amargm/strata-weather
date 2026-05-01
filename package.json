@@ -1,0 +1,37 @@
+{
+  "name": "strata-weather",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "expo": "~50.0.0",
+    "expo-location": "~16.5.0",
+    "expo-status-bar": "~1.11.0",
+    "react": "18.2.0",
+    "react-native": "0.73.6",
+    "react-native-gesture-handler": "~2.14.0",
+    "react-native-reanimated": "~3.6.0",
+    "react-native-safe-area-context": "4.8.2",
+    "react-native-screens": "~3.29.0",
+    "react-native-svg": "14.1.0",
+    "@react-navigation/native": "^6.1.0",
+    "@react-navigation/native-stack": "^6.9.0",
+    "expo-font": "~11.10.0",
+    "expo-splash-screen": "~0.26.0",
+    "@expo-google-fonts/playfair-display": "^0.2.0",
+    "@expo-google-fonts/space-mono": "^0.2.0",
+    "react-native-config": "^1.5.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@types/react": "~18.2.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.50.0"
+  },
+  "private": true
+}

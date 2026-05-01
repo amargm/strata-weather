@@ -1,0 +1,274 @@
+import React, { useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
+import { theme } from '../utils/theme';
+import { WEATHER_CODES } from '../utils/constants';
+import { TimelineInterval, WeatherValues } from '../types/weather';
+
+const ITEM_WIDTH = 60;
+
+interface HourlyScreenProps {
+  hourly: TimelineInterval[];
+  currentWind: WeatherValues | null;
+}
+
+export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
+  const scrollRef = useRef<ScrollView>(null);
+
+  const formatHour = (iso: string, index: number) => {
+    if (index === 0) return 'NOW';
+    const d = new Date(iso);
+    const h = d.getHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hr = h % 12 || 12;
+    return `${hr}${ampm}`;
+  };
+
+  const windDirText = (deg: number) => {
+    const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Hourly</Text>
+        <Text style={styles.subtitle}>Next 24 hours →</Text>
+      </View>
+
+      {/* Tape timeline */}
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tapeContent}
+        style={styles.tape}
+      >
+        {hourly.map((item, index) => {
+          const code = item.values.weatherCode;
+          const condition = WEATHER_CODES[code] || WEATHER_CODES[0];
+          const isNow = index === 0;
+
+          return (
+            <View
+              key={item.startTime}
+              style={[styles.tapeItem, isNow && styles.tapeItemNow]}
+            >
+              <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
+                {formatHour(item.startTime, index)}
+              </Text>
+              <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
+                {Math.round(item.values.temperature)}°
+              </Text>
+              <Text style={styles.tapeCond}>{condition.icon}</Text>
+              <View style={styles.tapePrecip}>
+                <View style={styles.tapePrecipBarWrap}>
+                  <View
+                    style={[
+                      styles.tapePrecipBar,
+                      { height: `${item.values.precipitationProbability}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
+                  {item.values.precipitationProbability}%
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      {/* Wind ribbon */}
+      <View style={styles.windRibbon}>
+        <View>
+          <Text style={styles.windLabelSm}>Wind · Sustained</Text>
+          <Text style={styles.windBig}>
+            {Math.round(currentWind?.windSpeed || 0)}
+            <Text style={styles.windUnitSm}> mph</Text>
+          </Text>
+          <Text style={styles.windDirText}>
+            {windDirText(currentWind?.windDirection || 0)} {Math.round(currentWind?.windDirection || 0)}°
+          </Text>
+          {(currentWind?.windGust || 0) > 0 && (
+            <Text style={styles.windGust}>
+              ▲ Gusts to {Math.round(currentWind?.windGust || 0)} mph
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Precipitation outlook */}
+      <View style={styles.precipOutlook}>
+        <Text style={styles.precipLabel}>Precipitation outlook</Text>
+        <Text style={styles.precipText}>
+          {hourly[0]?.values.precipitationProbability || 0}% chance next 2h.{' '}
+          Easing to {hourly[4]?.values.precipitationProbability || 0}% by{' '}
+          {hourly[4] ? formatHour(hourly[4].startTime, 4) : '--'}.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.paperDark,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingTop: 52,
+    paddingHorizontal: 28,
+    paddingBottom: 20,
+  },
+  title: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: 28,
+    color: theme.colors.ink,
+  },
+  subtitle: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+  },
+  tape: {
+    paddingHorizontal: 28,
+  },
+  tapeContent: {
+    gap: 0,
+  },
+  tapeItem: {
+    width: ITEM_WIDTH,
+    alignItems: 'center',
+    paddingTop: 12,
+    borderRightWidth: 0.5,
+    borderRightColor: theme.colors.faint,
+  },
+  tapeItemNow: {
+    backgroundColor: theme.colors.ink,
+  },
+  tapeHr: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: theme.colors.muted,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  tapeTemp: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: 22,
+    color: theme.colors.ink,
+    lineHeight: 22,
+  },
+  tapeTextLight: {
+    color: theme.colors.paper,
+  },
+  tapeTextMuted: {
+    color: 'rgba(240,235,225,0.5)',
+  },
+  tapeCond: {
+    fontSize: 18,
+    marginVertical: 6,
+  },
+  tapePrecip: {
+    alignItems: 'center',
+    gap: 2,
+    marginTop: 'auto' as any,
+    paddingBottom: 10,
+  },
+  tapePrecipBarWrap: {
+    width: 3,
+    height: 28,
+    backgroundColor: theme.colors.faint,
+    borderRadius: 2,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  tapePrecipBar: {
+    width: '100%',
+    borderRadius: 2,
+    backgroundColor: theme.colors.accent2,
+  },
+  tapePrecipVal: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    color: theme.colors.muted,
+    letterSpacing: 0.5,
+  },
+  windRibbon: {
+    marginHorizontal: 28,
+    marginTop: 16,
+    backgroundColor: theme.colors.faint,
+    borderRadius: 2,
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  windLabelSm: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 4,
+  },
+  windBig: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: 36,
+    color: theme.colors.ink,
+    lineHeight: 36,
+  },
+  windUnitSm: {
+    fontSize: 12,
+    fontFamily: theme.fonts.mono,
+    color: theme.colors.muted,
+  },
+  windDirText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: theme.colors.muted,
+    marginTop: 3,
+  },
+  windGust: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    color: theme.colors.accent,
+    marginTop: 2,
+    letterSpacing: 0.5,
+  },
+  precipOutlook: {
+    marginHorizontal: 28,
+    marginTop: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderLeftWidth: 2,
+    borderLeftColor: theme.colors.accent2,
+    backgroundColor: 'rgba(28,93,196,0.06)',
+  },
+  precipLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 4,
+  },
+  precipText: {
+    fontFamily: theme.fonts.serifItalic,
+    fontSize: 15,
+    color: theme.colors.ink,
+  },
+});

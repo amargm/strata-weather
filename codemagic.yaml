@@ -1,0 +1,109 @@
+workflows:
+  android-debug:
+    name: Android Debug Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 18
+      java: 17
+      groups:
+        - weather_api  # Contains WEATHER_API_KEY
+      vars:
+        PACKAGE_NAME: "com.fieldweather"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Generate Gradle Wrapper JAR
+        script: |
+          cd android
+          # Generate the wrapper jar if missing (common in CI)
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version=8.3
+          fi
+          chmod +x gradlew
+
+      - name: Bundle React Native JS
+        script: |
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res
+
+      - name: Build Debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
+
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+  android-release:
+    name: Android Release Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 18
+      java: 17
+      groups:
+        - weather_api        # WEATHER_API_KEY
+        - keystore_credentials  # CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
+      vars:
+        PACKAGE_NAME: "com.fieldweather"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+
+      - name: Decode keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > android/app/release.keystore
+
+      - name: Generate Gradle Wrapper JAR
+        script: |
+          cd android
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version=8.3
+          fi
+          chmod +x gradlew
+
+      - name: Bundle React Native JS
+        script: |
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res
+
+      - name: Build Release APK
+        script: |
+          cd android
+          ./gradlew assembleRelease \
+            -PRELEASE_STORE_FILE=release.keystore \
+            -PRELEASE_STORE_PASSWORD=$CM_KEYSTORE_PASSWORD \
+            -PRELEASE_KEY_ALIAS=$CM_KEY_ALIAS \
+            -PRELEASE_KEY_PASSWORD=$CM_KEY_PASSWORD
+
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com  # Update with your email
+        notify:
+          success: true
+          failure: true
