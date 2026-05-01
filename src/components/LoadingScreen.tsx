@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, Dimensions, Animated, Easing, AccessibilityInfo
 import { theme } from '../utils/theme';
 
 const { width: W, height: H } = Dimensions.get('window');
-const CENTER_X = W / 2;
-const CENTER_Y = H * 0.4;
 
 /** Number of concentric atmospheric rings */
 const RING_COUNT = 5;
+// Scale rings to fit screen — largest ring should be ~70% of screen width
+const RING_BASE = Math.min(W, H) * 0.12;
+const RING_STEP = Math.min(W, H) * 0.11;
+
 const RING_COLORS = [
   'rgba(196,65,28,0.12)',   // accent warmth
   'rgba(196,65,28,0.08)',
@@ -56,8 +58,9 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
   const PARTICLE_COUNT = 8;
   const particles = useRef(
     Array.from({ length: PARTICLE_COUNT }, () => ({
-      x: new Animated.Value(Math.random() * W),
-      y: new Animated.Value(Math.random() * H),
+      left: Math.random() * (W - 10),
+      startY: H * 0.5 + Math.random() * (H * 0.35),
+      translateY: new Animated.Value(0),
       opacity: new Animated.Value(0),
     }))
   ).current;
@@ -134,10 +137,7 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
 
     // 3. Floating particles — drift upward and fade
     const particleAnims = particles.map((p) => {
-      const startX = Math.random() * W;
-      const startY = H * 0.6 + Math.random() * H * 0.3;
-      p.x.setValue(startX);
-      p.y.setValue(startY);
+      p.translateY.setValue(0);
       p.opacity.setValue(0);
 
       return Animated.loop(
@@ -149,21 +149,22 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
               duration: 800,
               useNativeDriver: true,
             }),
-            Animated.timing(p.y, {
-              toValue: startY - 120 - Math.random() * 200,
+            Animated.timing(p.translateY, {
+              toValue: -(120 + Math.random() * 150),
               duration: 4000 + Math.random() * 2000,
               easing: Easing.out(Easing.quad),
-              useNativeDriver: true,
-            }),
-            Animated.timing(p.x, {
-              toValue: startX + (Math.random() - 0.5) * 60,
-              duration: 4000 + Math.random() * 2000,
               useNativeDriver: true,
             }),
           ]),
           Animated.timing(p.opacity, {
             toValue: 0,
             duration: 600,
+            useNativeDriver: true,
+          }),
+          // Reset position
+          Animated.timing(p.translateY, {
+            toValue: 0,
+            duration: 0,
             useNativeDriver: true,
           }),
         ])
@@ -217,57 +218,56 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
           style={[
             styles.particle,
             {
+              left: p.left,
+              top: p.startY,
               opacity: p.opacity,
-              transform: [{ translateX: p.x }, { translateY: p.y }],
+              transform: [{ translateY: p.translateY }],
             },
           ]}
         />
       ))}
 
       {/* Concentric pulsing rings */}
-      {ringAnims.map((anim, i) => {
-        const baseSize = 60 + i * 55;
-        const scale = anim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [1, 1.12 + i * 0.03],
-        });
-        const opacity = anim.interpolate({
-          inputRange: [0, 0.5, 1],
-          outputRange: [0.15 + (RING_COUNT - i) * 0.05, 0.6 + (RING_COUNT - i) * 0.06, 0.15],
-        });
+      <View style={styles.ringsContainer}>
+        {ringAnims.map((anim, i) => {
+          const baseSize = RING_BASE + i * RING_STEP;
+          const scale = anim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 1.12 + i * 0.03],
+          });
+          const opacity = anim.interpolate({
+            inputRange: [0, 0.5, 1],
+            outputRange: [0.15 + (RING_COUNT - i) * 0.05, 0.6 + (RING_COUNT - i) * 0.06, 0.15],
+          });
 
-        return (
-          <Animated.View
-            key={`ring-${i}`}
-            style={[
-              styles.ring,
-              {
-                width: baseSize,
-                height: baseSize,
-                borderRadius: baseSize / 2,
-                borderColor: RING_COLORS[i],
-                left: CENTER_X - baseSize / 2,
-                top: CENTER_Y - baseSize / 2,
-                opacity,
-                transform: [{ scale }],
-              },
-            ]}
-          />
-        );
-      })}
-
-      {/* Center orb */}
-      <Animated.View
-        style={[
-          styles.orb,
-          {
-            left: CENTER_X - 20,
-            top: CENTER_Y - 20,
-            opacity: orbOpacity,
-            transform: [{ scale: orbScale }],
-          },
-        ]}
-      />
+          return (
+            <Animated.View
+              key={`ring-${i}`}
+              style={[
+                styles.ring,
+                {
+                  width: baseSize,
+                  height: baseSize,
+                  borderRadius: baseSize / 2,
+                  borderColor: RING_COLORS[i],
+                  opacity,
+                  transform: [{ scale }],
+                },
+              ]}
+            />
+          );
+        })}
+        {/* Center orb */}
+        <Animated.View
+          style={[
+            styles.orb,
+            {
+              opacity: orbOpacity,
+              transform: [{ scale: orbScale }],
+            },
+          ]}
+        />
+      </View>
 
       {/* Brand + tip text */}
       <View style={styles.textArea} accessible accessibilityRole="text" accessibilityLabel={`Strata, Layered Weather. ${TIPS[tipIndex]}`}>
@@ -295,12 +295,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.paper,
   },
+  ringsContainer: {
+    position: 'absolute',
+    top: '25%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Math.min(W, H) * 0.6,
+  },
   ring: {
     position: 'absolute',
     borderWidth: 1.5,
   },
   orb: {
-    position: 'absolute',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -318,7 +326,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: H * 0.35,
+    height: H * 0.3,
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: 20,

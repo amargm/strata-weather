@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues } from '../types/weather';
+import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface AtmosphereScreenProps {
   weather: WeatherValues | null;
@@ -184,8 +185,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingTop: 52,
-    paddingHorizontal: 28,
+    paddingTop: getStatusBarPadding(),
+    paddingHorizontal: sw(28),
     paddingBottom: 16,
   },
   eyebrow: {

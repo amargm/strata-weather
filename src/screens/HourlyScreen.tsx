@@ -8,6 +8,7 @@ import {
 import { theme } from '../utils/theme';
 import { WEATHER_CODES } from '../utils/constants';
 import { TimelineInterval, WeatherValues } from '../types/weather';
+import { getStatusBarPadding, sw } from '../utils/responsive';
 
 const ITEM_WIDTH = 68;
 
@@ -156,8 +157,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingTop: 52,
-    paddingHorizontal: 28,
+    paddingTop: getStatusBarPadding(),
+    paddingHorizontal: sw(28),
     paddingBottom: 20,
   },
   title: {

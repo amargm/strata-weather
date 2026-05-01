@@ -11,6 +11,7 @@ import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
+import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
 
 interface NowScreenProps {
   weather: WeatherValues | null;
@@ -181,8 +182,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingTop: 52,
-    paddingHorizontal: 28,
+    paddingTop: getStatusBarPadding(),
+    paddingHorizontal: sw(28),
     zIndex: 2,
   },
   eyebrow: {
@@ -268,18 +269,18 @@ const styles = StyleSheet.create({
   tempStage: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: sw(28),
     zIndex: 2,
-    marginTop: -40,
+    marginTop: sh(-20),
   },
   tempSuper: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 140,
-    lineHeight: 140,
+    fontSize: ms(120, 0.4),
+    lineHeight: ms(120, 0.4),
     color: theme.colors.ink,
   },
   tempUnitMark: {
-    fontSize: 36,
+    fontSize: ms(30, 0.4),
     fontFamily: theme.fonts.mono,
     color: theme.colors.muted,
   },
@@ -315,16 +316,16 @@ const styles = StyleSheet.create({
     color: theme.colors.accent2,
   },
   nowFooter: {
-    paddingHorizontal: 28,
-    paddingBottom: 28,
+    paddingHorizontal: sw(28),
+    paddingBottom: sh(28),
     zIndex: 2,
   },
   conditionLong: {
     fontFamily: theme.fonts.serifItalic,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: ms(15),
+    lineHeight: ms(22),
     color: theme.colors.muted,
-    maxWidth: 260,
+    maxWidth: sw(260),
   },
   pullHint: {
     alignItems: 'center',

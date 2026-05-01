@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
+import { getStatusBarPadding, sw } from '../utils/responsive';
 
 interface ScienceScreenProps {
   weather: WeatherValues | null;
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   header: {
-    paddingTop: 20,
+    paddingTop: getStatusBarPadding(),
     paddingHorizontal: 28,
     paddingBottom: 20,
     borderBottomWidth: 0.5,

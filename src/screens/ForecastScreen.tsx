@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { DailyInterval } from '../types/weather';
+import { getStatusBarPadding, sw } from '../utils/responsive';
 
 interface ForecastScreenProps {
   daily: DailyInterval[];
@@ -113,8 +114,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingTop: 20,
-    paddingHorizontal: 28,
+    paddingTop: getStatusBarPadding(),
+    paddingHorizontal: sw(28),
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.faint,
