@@ -12,6 +12,13 @@ import { TimelineInterval, WeatherValues } from '../types/weather';
 
 const ITEM_WIDTH = 60;
 
+const WIND_DIR_FULL: Record<string, string> = {
+  N: 'North', NNE: 'North-northeast', NE: 'Northeast', ENE: 'East-northeast',
+  E: 'East', ESE: 'East-southeast', SE: 'Southeast', SSE: 'South-southeast',
+  S: 'South', SSW: 'South-southwest', SW: 'Southwest', WSW: 'West-southwest',
+  W: 'West', WNW: 'West-northwest', NW: 'Northwest', NNW: 'North-northwest',
+};
+
 interface HourlyScreenProps {
   hourly: TimelineInterval[];
   currentWind: WeatherValues | null;
@@ -37,7 +44,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 02 · Hourly</Text>
           <Text style={styles.title}>Hourly</Text>
@@ -52,6 +59,8 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tapeContent}
         style={styles.tape}
+        accessibilityRole="list"
+        accessibilityLabel="Hourly forecast timeline"
       >
         {hourly.map((item, index) => {
           const code = item.values.weatherCode;
@@ -62,6 +71,9 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             <View
               key={item.startTime}
               style={[styles.tapeItem, isNow && styles.tapeItemNow]}
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${item.values.precipitationProbability} percent precipitation chance`}
             >
               <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                 {formatHour(item.startTime, index)}
@@ -69,7 +81,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
               <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                 {Math.round(item.values.temperature)}°
               </Text>
-              <Text style={styles.tapeCond}>{condition.icon}</Text>
+              <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
               <View style={styles.tapePrecip}>
                 <View style={styles.tapePrecipBarWrap}>
                   <View
@@ -89,7 +101,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       </ScrollView>
 
       {/* Wind ribbon */}
-      <View style={styles.windRibbon}>
+      <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round(currentWind?.windSpeed || 0)} miles per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection || 0)] || windDirText(currentWind?.windDirection || 0)} ${Math.round(currentWind?.windDirection || 0)} degrees${(currentWind?.windGust || 0) > 0 ? `, gusts to ${Math.round(currentWind?.windGust || 0)} miles per hour` : ''}`} accessibilityLiveRegion="polite">
         <View>
           <Text style={styles.windLabelSm}>Wind · Sustained</Text>
           <Text style={styles.windBig}>
@@ -112,7 +124,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       </View>
 
       {/* Precipitation outlook */}
-      <View style={styles.precipOutlook}>
+      <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability || 0} percent chance next 2 hours. Easing to ${hourly[4]?.values.precipitationProbability || 0} percent by ${hourly[4] ? formatHour(hourly[4].startTime, 4) : 'unknown'}`}>
         <Text style={styles.precipLabel}>Precipitation outlook</Text>
         <Text style={styles.windHint}>Chance of rain or snow in your area</Text>
         <Text style={styles.precipText}>
@@ -219,7 +231,7 @@ const styles = StyleSheet.create({
   },
   tapePrecipVal: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 10,
     color: theme.colors.muted,
     letterSpacing: 0.5,
   },
@@ -267,8 +279,8 @@ const styles = StyleSheet.create({
   },
   windHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: theme.colors.faint,
+    fontSize: 10,
+    color: 'rgba(15,14,12,0.45)',
     marginTop: 3,
   },
   precipOutlook: {

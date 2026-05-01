@@ -294,7 +294,7 @@ export default function App(props: { initialLayer?: number }) {
 
   if ((locLoading || weatherLoading) && !data) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.loadingContainer} accessible accessibilityRole="progressbar" accessibilityLabel="Loading weather data">
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
         <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
       </View>
@@ -305,15 +305,17 @@ export default function App(props: { initialLayer?: number }) {
   if (error && !data) {
     const { title, body } = friendlyError(error);
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.loadingContainer} accessible accessibilityRole="alert">
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
-        <Text style={styles.errorIcon}>⚠</Text>
-        <Text style={styles.errorTitle}>{title}</Text>
+        <Text style={styles.errorIcon} importantForAccessibility="no">⚠</Text>
+        <Text style={styles.errorTitle} accessibilityRole="header">{title}</Text>
         <Text style={styles.errorBody}>{body}</Text>
         <TouchableOpacity
           onPress={handleRefresh}
           style={styles.retryBtn}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Try again to load weather data"
         >
           <Text style={styles.retryText}>Try again</Text>
         </TouchableOpacity>
@@ -450,8 +452,8 @@ export default function App(props: { initialLayer?: number }) {
 
       {/* First-launch swipe hint */}
       {showSwipeHint && (
-        <RNAnimated.View style={[styles.swipeHint, { opacity: swipeHintFade }]}>
-          <Text style={styles.swipeHintArrow}>↕</Text>
+        <RNAnimated.View style={[styles.swipeHint, { opacity: swipeHintFade }]} accessible accessibilityRole="text" accessibilityLabel="Swipe up to explore layers">
+          <Text style={styles.swipeHintArrow} importantForAccessibility="no">↕</Text>
           <Text style={styles.swipeHintText}>Swipe up to explore layers</Text>
         </RNAnimated.View>
       )}

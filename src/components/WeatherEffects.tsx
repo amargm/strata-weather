@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions, Easing } from 'react-native';
+import { View, StyleSheet, Animated, Dimensions, Easing, AccessibilityInfo } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -16,6 +16,16 @@ export const WeatherEffects = React.memo(function WeatherEffects({
   weatherCode,
   cloudCover,
 }: WeatherEffectsProps) {
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  // Skip all decorative animations when reduce motion is enabled
+  if (reduceMotion) return null;
+
   const isRain = [4000, 4001, 4200, 4201, 6000, 6001, 6200, 6201].includes(weatherCode);
   const isSnow = [5000, 5001, 5100, 5101, 7000, 7101, 7102].includes(weatherCode);
   const isClear = [1000, 1100].includes(weatherCode);

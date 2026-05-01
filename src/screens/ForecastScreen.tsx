@@ -31,12 +31,12 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 03 · 7-Day</Text>
           <Text style={styles.title}>7 Days</Text>
         </View>
-        <View style={styles.legend}>
+        <View style={styles.legend} accessible accessibilityLabel="Legend: red dot is high temperature, blue dot is low temperature">
           <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
           <Text style={styles.legendText}>Hi</Text>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.accent2 }]} />
@@ -54,20 +54,27 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
       </View>
 
       {/* Forecast rows */}
-      <View style={styles.table}>
+      <View style={styles.table} accessibilityRole="list">
         {daily.map((day, index) => {
           const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[0];
           const barLeft = ((day.values.temperatureMin - minTemp) / range) * 100;
           const barWidth = ((day.values.temperatureMax - day.values.temperatureMin) / range) * 100;
 
           return (
-            <TouchableOpacity key={day.startTime} style={styles.row} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={day.startTime}
+              style={styles.row}
+              activeOpacity={0.7}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)} degrees, Low ${Math.round(day.values.temperatureMin)} degrees. ${day.values.precipitationProbability} percent precipitation`}
+            >
               <View style={styles.dayCol}>
                 <Text style={styles.fcDay}>{formatDay(day.startTime, index)}</Text>
                 <Text style={styles.fcDaySm}>{formatDate(day.startTime)}</Text>
               </View>
-              <Text style={styles.fcIcon}>{condition.icon}</Text>
-              <View style={styles.barCell}>
+              <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
+              <View style={styles.barCell} importantForAccessibility="no">
                 <View style={styles.barTrack}>
                   <View
                     style={[
@@ -147,8 +154,8 @@ const styles = StyleSheet.create({
   },
   colHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: theme.colors.faint,
+    fontSize: 10,
+    color: theme.colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

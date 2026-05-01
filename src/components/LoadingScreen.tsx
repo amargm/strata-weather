@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing, AccessibilityInfo } from 'react-native';
 import { theme } from '../utils/theme';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -36,6 +36,13 @@ interface Props {
  * floating particles, and a breathing center orb.
  */
 export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
   // --- Pulsing rings ---
   const ringAnims = useRef(
     Array.from({ length: RING_COUNT }, () => new Animated.Value(0))
@@ -61,6 +68,15 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // When reduce motion is on, skip all decorative animations and just show static state
+    if (reduceMotion) {
+      titleOpacity.setValue(1);
+      titleTranslateY.setValue(0);
+      subtitleOpacity.setValue(1);
+      orbOpacity.setValue(0.7);
+      return;
+    }
+
     // 1. Staggered ring pulses
     const ringAnimations = ringAnims.map((anim, i) =>
       Animated.loop(
@@ -190,7 +206,7 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
       particleAnims.forEach((a) => a.stop());
       titleAnim.stop();
     };
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <View style={styles.container}>
@@ -254,7 +270,7 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
       />
 
       {/* Brand + tip text */}
-      <View style={styles.textArea}>
+      <View style={styles.textArea} accessible accessibilityRole="text" accessibilityLabel={`Strata, Layered Weather. ${TIPS[tipIndex]}`}>
         <Animated.Text
           style={[
             styles.brandName,
@@ -266,7 +282,7 @@ export const LoadingScreen = React.memo(({ tipIndex, tipFade }: Props) => {
         <Animated.Text style={[styles.brandSub, { opacity: subtitleOpacity }]}>
           Layered Weather
         </Animated.Text>
-        <Animated.Text style={[styles.tipText, { opacity: tipFade }]}>
+        <Animated.Text style={[styles.tipText, { opacity: tipFade }]} accessibilityLiveRegion="polite">
           {TIPS[tipIndex]}
         </Animated.Text>
       </View>

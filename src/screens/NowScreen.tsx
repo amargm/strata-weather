@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
+  AccessibilityInfo,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
@@ -21,16 +22,28 @@ interface NowScreenProps {
 }
 
 export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors }: NowScreenProps) {
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
   const tempAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      fadeAnim.setValue(1);
+      slideAnim.setValue(0);
+      return;
+    }
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 15 }),
     ]).start();
-  }, []);
+  }, [reduceMotion]);
 
   const now = new Date();
   const dateStr = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
@@ -56,21 +69,21 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       </View>
 
       {/* Top bar */}
-      <View style={styles.topBar}>
+      <View style={styles.topBar} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 00 · Now</Text>
           <Text style={styles.locationLine}>📍 Current location</Text>
-          <Text style={styles.locationName}>{locationName || 'Loading...'}</Text>
+          <Text style={styles.locationName} accessibilityRole="text">{locationName || 'Loading...'}</Text>
         </View>
         <View style={styles.topRight}>
-          <Text style={styles.dateStamp}>{dateStr}</Text>
-          <Text style={styles.conditionWord}>{condition.label}</Text>
+          <Text style={styles.dateStamp} accessibilityLabel={`Date: ${dateStr}`}>{dateStr}</Text>
+          <Text style={styles.conditionWord} accessibilityLabel={`Condition: ${condition.label}`}>{condition.label}</Text>
         </View>
       </View>
 
       {/* Live strip */}
-      <View style={styles.liveStrip}>
-        <View style={styles.liveItem}>
+      <View style={styles.liveStrip} accessibilityRole="summary">
+        <View style={styles.liveItem} accessible accessibilityLabel={`Humidity ${weather?.humidity || 'unknown'} percent. Moisture in air`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>{weather?.humidity || '--'}%</Text>
             <Text style={styles.liveLabel}>Hum</Text>
@@ -78,14 +91,14 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Moisture in air</Text>
         </View>
-        <View style={styles.liveItem}>
+        <View style={styles.liveItem} accessible accessibilityLabel={`Wind ${Math.round(weather?.windSpeed || 0)} miles per hour. Ground speed`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>{Math.round(weather?.windSpeed || 0)}mph</Text>
             <Text style={styles.liveLabel}>Wind</Text>
           </View>
           <Text style={styles.liveHint}>Ground speed</Text>
         </View>
-        <View style={styles.liveItem}>
+        <View style={styles.liveItem} accessible accessibilityLabel={`UV index ${weather?.uvIndex || 'unknown'}. Sun burn risk`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>UV {weather?.uvIndex || '--'}</Text>
             <Text style={styles.liveLabel}>Index</Text>
@@ -100,6 +113,10 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           styles.tempStage,
           { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`Temperature ${Math.round(weather?.temperature || 0)} degrees celsius. Feels like ${Math.round(weather?.temperatureApparent || 0)} degrees. High ${Math.round(highTemp || 0)}, Low ${Math.round(lowTemp || 0)}`}
+        accessibilityLiveRegion="polite"
       >
         <TouchableOpacity activeOpacity={0.9}>
           <Text style={styles.tempSuper}>
@@ -111,7 +128,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           <Text style={styles.tempFeels}>
             Feels like {Math.round(weather?.temperatureApparent || 0)}°
           </Text>
-          <View style={styles.tempRangePill}>
+          <View style={styles.tempRangePill} accessibilityLabel={`High ${Math.round(highTemp || 0)} degrees, Low ${Math.round(lowTemp || 0)} degrees`}>
             <Text style={styles.rangeHi}>↑ {Math.round(highTemp || 0)}°</Text>
             <Text style={styles.rangeLo}>↓ {Math.round(lowTemp || 0)}°</Text>
           </View>
@@ -238,8 +255,8 @@ const styles = StyleSheet.create({
   },
   liveHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: theme.colors.faint,
+    fontSize: 9,
+    color: 'rgba(15,14,12,0.45)',
     marginTop: 2,
   },
   liveDot: {

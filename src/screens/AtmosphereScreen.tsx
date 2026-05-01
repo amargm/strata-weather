@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues } from '../types/weather';
 
@@ -14,6 +14,13 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
     new Animated.Value(0),
   ]).current;
 
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     if (!weather) return;
     const targets = [
@@ -21,29 +28,33 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
       (weather.pressureSurfaceLevel - 950) / 100, // normalize ~950-1050
       weather.cloudCover / 100,
     ];
+    if (reduceMotion) {
+      barAnims.forEach((anim, i) => anim.setValue(targets[i]));
+      return;
+    }
     Animated.stagger(100, barAnims.map((anim, i) =>
       Animated.spring(anim, { toValue: targets[i], useNativeDriver: false, damping: 15 })
     )).start();
-  }, [weather]);
+  }, [weather, reduceMotion]);
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 01 · Atmosphere</Text>
           <Text style={styles.title}>Conditions</Text>
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.updatedLabel}>Updated</Text>
-          <Text style={styles.updatedTime}>{timeStr}</Text>
+          <Text style={styles.updatedTime} accessibilityLabel={`Updated at ${timeStr}`}>{timeStr}</Text>
         </View>
       </View>
 
       {/* Metrics Grid */}
-      <View style={styles.metricsGrid}>
+      <View style={styles.metricsGrid} accessibilityRole="summary">
         <MetricCell
           label="Humidity"
           value={`${weather?.humidity || '--'}`}
@@ -72,7 +83,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
 
       {/* Extra row */}
       <View style={styles.extraRow}>
-        <View style={styles.extraCell}>
+        <View style={styles.extraCell} accessible accessibilityLabel={`Dew Point ${Math.round(weather?.dewPoint || 0)} degrees celsius. Wet-bulb ${Math.round((weather?.dewPoint || 0) + 2)} degrees. Temperature where fog forms, sticky above 15 degrees`} accessibilityRole="text">
           <Text style={styles.cellLabel}>Dew Point</Text>
           <Text style={styles.extraVal}>{Math.round(weather?.dewPoint || 0)}°C</Text>
           <Text style={styles.cellUnit}>
@@ -80,7 +91,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
           </Text>
           <Text style={styles.cellHint}>Temp where fog forms · sticky above 15°</Text>
         </View>
-        <View style={[styles.extraCell, { borderRightWidth: 0 }]}>
+        <View style={[styles.extraCell, { borderRightWidth: 0 }]} accessible accessibilityLabel={`Visibility ${weather?.visibility || 'unknown'} kilometers. How far you can see clearly`} accessibilityRole="text">
           <Text style={styles.cellLabel}>Visibility</Text>
           <Text style={styles.extraVal}>{weather?.visibility || '--'} km</Text>
           <Text style={styles.cellUnit}>Current conditions</Text>
@@ -89,7 +100,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
       </View>
 
       {/* UV Index block */}
-      <View style={styles.uvBlock}>
+      <View style={styles.uvBlock} accessible accessibilityLabel={`UV Index ${weather?.uvIndex || 0}, ${(weather?.uvIndex || 0) <= 2 ? 'Low' : (weather?.uvIndex || 0) <= 5 ? 'Moderate' : 'High'}. Sun burn risk, 6 plus wear sunscreen`} accessibilityRole="text">
         <Text style={styles.cellLabel}>UV Index</Text>
         <Text style={styles.uvVal}>{weather?.uvIndex || 0}</Text>
         <Text style={styles.cellUnit}>
@@ -108,8 +119,8 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
 
       {/* Wind gust alert */}
       {(weather?.windGust || 0) > 30 && (
-        <View style={styles.alertStrip}>
-          <Text style={styles.alertIcon}>!</Text>
+        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round(weather?.windGust || 0)} miles per hour expected`}>
+          <Text style={styles.alertIcon} importantForAccessibility="no">!</Text>
           <View>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>
@@ -134,11 +145,11 @@ function MetricCell({
   });
 
   return (
-    <View style={styles.cell}>
+    <View style={styles.cell} accessible accessibilityRole="text" accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}>
       <Text style={styles.cellLabel}>{label}</Text>
       <Text style={styles.cellVal}>{value}</Text>
       <Text style={styles.cellUnit}>{unit}</Text>
-      <Animated.View style={[styles.cellBar, { width, backgroundColor: color }]} />
+      <Animated.View style={[styles.cellBar, { width, backgroundColor: color }]} importantForAccessibility="no" />
       <Text style={styles.cellHint}>{hint}</Text>
     </View>
   );
@@ -161,10 +172,10 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.4)',
+    color: 'rgba(240,235,225,0.55)',
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
@@ -176,9 +187,9 @@ const styles = StyleSheet.create({
   },
   updatedLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 1,
-    color: 'rgba(240,235,225,0.3)',
+    color: 'rgba(240,235,225,0.55)',
   },
   updatedTime: {
     fontFamily: theme.fonts.mono,
@@ -202,10 +213,10 @@ const styles = StyleSheet.create({
   },
   cellLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 10,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.35)',
+    color: 'rgba(240,235,225,0.55)',
     marginBottom: 8,
   },
   cellVal: {
@@ -222,10 +233,10 @@ const styles = StyleSheet.create({
   },
   cellHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: 'rgba(240,235,225,0.25)',
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.55)',
     marginTop: 6,
-    lineHeight: 10,
+    lineHeight: 14,
   },
   cellBar: {
     position: 'absolute',

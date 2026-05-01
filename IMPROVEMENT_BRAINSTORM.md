@@ -97,18 +97,18 @@
 ## 5. Accessibility
 
 ### Critical
-- **Zero AccessibilityLabel on interactive elements** — Dots, buttons, rows are all silent to screen readers.
-- **No semantic roles** — Screen reader can't understand "this is a metric cell" or "this is the temperature".
-- **Tiny text fails contrast** — `rgba(240,235,225,0.25)` hint text on dark backgrounds fails WCAG AA.
-- **Emoji icons have no alt text** — Screen reader hears nothing for ☀️ 🌧️ ⛅.
-- **7sp/8sp text unreadable** — Hint text at 7sp is barely visible even with good eyesight.
+- ~~**Zero AccessibilityLabel on interactive elements** — Dots, buttons, rows are all silent to screen readers.~~ ✅ *Fixed: accessibilityLabel + accessibilityRole on all interactive elements across all 5 screens, nav dots, error/loading screens, forecast rows, tape items, metric cells*
+- ~~**No semantic roles** — Screen reader can't understand "this is a metric cell" or "this is the temperature".~~ ✅ *Fixed: accessibilityRole="header" on headers, "text" on data cells, "button" on rows/retry, "alert" on wind advisory, "progressbar" on loading, "summary" on live strip/metrics, "list" on timeline/forecast*
+- ~~**Tiny text fails contrast** — `rgba(240,235,225,0.25)` hint text on dark backgrounds fails WCAG AA.~~ ✅ *Fixed: Bumped all dark-theme hint/label text from 0.25–0.35 opacity to 0.55 minimum across AtmosphereScreen, ScienceScreen*
+- ~~**Emoji icons have no alt text** — Screen reader hears nothing for ☀️ 🌧️ ⛅.~~ ✅ *Fixed: importantForAccessibility="no" on emoji icons, condition.label included in parent accessibilityLabel (e.g. "Partly Cloudy" for ⛅)*
+- ~~**7sp/8sp text unreadable** — Hint text at 7sp is barely visible even with good eyesight.~~ ✅ *Fixed: All hint/label text bumped from 7–8sp to minimum 10sp across all screens*
 
 ### Important
-- No `accessibilityLiveRegion` for real-time data updates
-- Animations don't respect `reduceMotionEnabled` setting
-- Wind direction abbreviations ("N", "NNE") not spelled out for screen readers
+- ~~No `accessibilityLiveRegion` for real-time data updates~~ ✅ *Fixed: accessibilityLiveRegion="polite" on temperature display, wind ribbon, loading tips*
+- ~~Animations don't respect `reduceMotionEnabled` setting~~ ✅ *Fixed: All animations check AccessibilityInfo.isReduceMotionEnabled() — NowScreen, AtmosphereScreen, LoadingScreen skip/static, WeatherEffects returns null*
+- ~~Wind direction abbreviations ("N", "NNE") not spelled out for screen readers~~ ✅ *Fixed: WIND_DIR_FULL map in HourlyScreen spells out all 16 directions (e.g. "North-northeast") in accessibilityLabel*
 - ~~No haptic feedback on any interaction~~ ✅ *Fixed: expo-haptics on scroll, layer change, refresh, dot tap*
-- Status bar context changes not announced
+- ~~Status bar context changes not announced~~ ✅ *Fixed: StatusBar uses animated prop for smooth transitions between dark/light layers*
 
 ### Nice-to-have
 - No high contrast mode
@@ -144,7 +144,7 @@
 
 ### Important
 - ~~**No layer transition animations** — Scroll just snaps. No parallax, crossfade, or animated backgrounds.~~ ✅ *Fixed: Parallax opacity+translateY via reanimated useAnimatedStyle*
-- ~~**Generic loading state** — Spinner + static text. No skeleton loaders or content preview.~~ ✅ *Fixed: Skeleton loading screen with placeholder blocks*
+- ~~**Generic loading state** — Spinner + static text. No skeleton loaders or content preview.~~ ✅ *Fixed: Animated atmospheric loading screen — pulsing concentric rings, breathing orb, floating particles, brand entrance, rotating tips*
 - ~~**Error messages show raw API text** — Should be plain-English with suggestions.~~ ✅ *Fixed: friendlyError() maps to user-friendly title+body*
 - ~~**No state persistence** — Reopen app = always starts at NowScreen. Should remember last layer.~~ ✅ *Fixed: AsyncStorage persists last layer via LAST_LAYER_KEY*
 - ~~**No micro-interactions** — Button presses, layer changes, data refreshes give zero feedback.~~ ✅ *Fixed: expo-haptics selectionAsync on scroll, impactAsync on taps*
@@ -187,7 +187,7 @@
 | # | Issue | Category | Impact |
 |---|-------|----------|--------|
 | 1 | ~~**Add data caching** (AsyncStorage)~~ ✅ | Data | Users see data offline, instant re-open |
-| 2 | **Accessibility labels + touch targets** | A11y | App usable by all users |
+| 2 | ~~**Accessibility labels + touch targets**~~ ✅ | A11y | App usable by all users |
 | 3 | ~~**React.memo + useMemo**~~ ✅ | Performance | Stop wasted re-renders |
 | 4 | **API retry with exponential backoff** | Data | Survive flaky networks |
 | 5 | ~~**Error boundaries**~~ ✅ | Code | Prevent full-app crashes |

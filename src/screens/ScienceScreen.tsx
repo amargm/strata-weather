@@ -35,7 +35,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 04 · Deep Data</Text>
           <Text style={styles.title}>Science & Extremes</Text>
@@ -45,11 +45,11 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
       {/* Science grid */}
       <View style={styles.grid}>
         {/* UV */}
-        <View style={styles.block}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`UV Index ${uvIndex}, ${uvLabel}. How strong the sun is right now. 6 plus means sunburn in under 20 minutes`}>
           <Text style={styles.label}>UV Index</Text>
           <Text style={[styles.val, { color: theme.colors.accent }]}>{uvIndex}</Text>
           <Text style={styles.unit}>{uvLabel}</Text>
-          <View style={styles.uvBar}>
+          <View style={styles.uvBar} importantForAccessibility="no">
             <View style={[styles.uvMarker, { left: `${(uvIndex / 11) * 100}%` }]} />
           </View>
           <Text style={styles.sub}>
@@ -58,7 +58,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
 
         {/* Pressure trend */}
-        <View style={styles.block}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel || 0)} hectopascals, steady. Weight of air above you. Dropping means rain likely, rising means clearing`}>
           <Text style={styles.label}>Pressure</Text>
           <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel || 0)}</Text>
           <Text style={styles.unit}>hPa · Steady</Text>
@@ -68,7 +68,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
 
         {/* Wet-bulb */}
-        <View style={styles.block}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Wet-bulb temperature ${Math.round((weather?.dewPoint || 0) + 2)} degrees. Feels ${Math.round(weather?.temperatureApparent || 0)} degrees. ${(weather?.temperatureApparent || 0) < 18 ? 'comfortable' : 'sweat won\'t evaporate easily'}`}>
           <Text style={styles.label}>Wet-bulb Temp</Text>
           <Text style={styles.val}>{Math.round((weather?.dewPoint || 0) + 2)}°</Text>
           <Text style={styles.unit}>°C</Text>
@@ -80,7 +80,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
 
         {/* Humidity */}
-        <View style={styles.block}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity || 0} percent. Moisture in the air. 70 percent plus feels muggy, 30 percent minus feels dry`}>
           <Text style={styles.label}>Humidity</Text>
           <Text style={[styles.val, { color: theme.colors.accent2 }]}>
             {weather?.humidity || 0}
@@ -93,7 +93,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
       </View>
 
       {/* Sun strip */}
-      <View style={styles.sunStrip}>
+      <View style={styles.sunStrip} accessible accessibilityRole="text" accessibilityLabel={`Sunrise at ${sunrise}. Sunset at ${sunset}. Total daylight ${daylightStr}`}>
         <View style={styles.sunCol}>
           <Text style={styles.sunLabel}>Sunrise</Text>
           <Text style={styles.sunVal}>{sunrise}</Text>
@@ -133,10 +133,10 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.3)',
+    color: 'rgba(240,235,225,0.55)',
     marginBottom: 6,
   },
   title: {
@@ -158,10 +158,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 10,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.3)',
+    color: 'rgba(240,235,225,0.55)',
     marginBottom: 10,
   },
   val: {
@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
   unit: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    color: 'rgba(240,235,225,0.4)',
+    color: 'rgba(240,235,225,0.55)',
     marginTop: 2,
   },
   sub: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    color: 'rgba(240,235,225,0.4)',
+    color: 'rgba(240,235,225,0.55)',
     marginTop: 6,
     lineHeight: 14,
   },
@@ -212,10 +212,10 @@ const styles = StyleSheet.create({
   },
   sunLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.3)',
+    color: 'rgba(240,235,225,0.55)',
     marginBottom: 4,
   },
   sunVal: {
@@ -225,8 +225,8 @@ const styles = StyleSheet.create({
   },
   sunHint: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: 'rgba(240,235,225,0.25)',
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.55)',
     marginTop: 3,
   },
 });
