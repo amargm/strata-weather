@@ -78,21 +78,21 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
     Animated.parallel([
       Animated.timing(refreshBtnSpin, {
         toValue: 1,
-        duration: 600,
+        duration: 1000,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(rippleScale, {
         toValue: 1,
-        duration: 700,
+        duration: 1200,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.sequence([
-        Animated.delay(200),
+        Animated.delay(400),
         Animated.timing(contentFade, {
           toValue: 0,
-          duration: 400,
+          duration: 600,
           useNativeDriver: true,
         }),
       ]),
@@ -102,17 +102,17 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
 
       // Phase 2: Ripple fades out, content fades back in
       Animated.sequence([
-        Animated.delay(300),
+        Animated.delay(500),
         Animated.parallel([
           Animated.timing(rippleOpacity, {
             toValue: 0,
-            duration: 500,
+            duration: 800,
             easing: Easing.in(Easing.cubic),
             useNativeDriver: true,
           }),
           Animated.timing(contentFade, {
             toValue: 1,
-            duration: 600,
+            duration: 1000,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),

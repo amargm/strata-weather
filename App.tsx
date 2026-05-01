@@ -39,7 +39,6 @@ import { useWeather } from './src/hooks/useWeather';
 import { NowScreen } from './src/screens/NowScreen';
 import { AtmosphereScreen } from './src/screens/AtmosphereScreen';
 import { HourlyScreen } from './src/screens/HourlyScreen';
-import { ForecastScreen } from './src/screens/ForecastScreen';
 import { ScienceScreen } from './src/screens/ScienceScreen';
 import { theme } from './src/utils/theme';
 import { sw, sh } from './src/utils/responsive';
@@ -51,12 +50,12 @@ import { LoadingScreen } from './src/components/LoadingScreen';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const LAYER_LABELS = ['Now', 'Atmosphere', 'Hourly', '7-Day', 'Deep Data'];
+const LAYER_LABELS = ['Now', 'Atmosphere', 'Timeline', 'Science'];
 const LAST_LAYER_KEY = 'strata_last_layer';
 const ONBOARDED_KEY = 'strata_onboarded';
 
-// Layers 1 (Atmosphere) and 4 (Science) have dark backgrounds
-const DARK_LAYERS = new Set([1, 4]);
+// Layers 1 (Atmosphere) and 3 (Science) have dark backgrounds
+const DARK_LAYERS = new Set([1, 3]);
 
 const LOADING_TIPS = [
   'Reading the sky...',
@@ -306,8 +305,7 @@ export default function App(props: { initialLayer?: number }) {
   const layer1Style = makeLayerStyle(1);
   const layer2Style = makeLayerStyle(2);
   const layer3Style = makeLayerStyle(3);
-  const layer4Style = makeLayerStyle(4);
-  const layerStyles = [layer0Style, layer1Style, layer2Style, layer3Style, layer4Style];
+  const layerStyles = [layer0Style, layer1Style, layer2Style, layer3Style];
 
   // --- Scroll-driven dot indicator animations (vertical pills) ---
   const makeDotAnimStyle = (index: number) => {
@@ -326,8 +324,7 @@ export default function App(props: { initialLayer?: number }) {
   const dotAnim1 = makeDotAnimStyle(1);
   const dotAnim2 = makeDotAnimStyle(2);
   const dotAnim3 = makeDotAnimStyle(3);
-  const dotAnim4 = makeDotAnimStyle(4);
-  const dotAnimStyles = [dotAnim0, dotAnim1, dotAnim2, dotAnim3, dotAnim4];
+  const dotAnimStyles = [dotAnim0, dotAnim1, dotAnim2, dotAnim3];
 
   // --- Derived values ---
   const seasonalColors = useMemo(() => getSeasonalColors(), []);
@@ -447,31 +444,23 @@ export default function App(props: { initialLayer?: number }) {
           </Animated.View>
         </View>
 
-        {/* Layer 2: Hourly */}
+        {/* Layer 2: Timeline (Hourly + Forecast merged) */}
         <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden', backgroundColor: theme.colors.paperDark }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[2]]}>
-            <ErrorBoundary layerName="Hourly">
+            <ErrorBoundary layerName="Timeline">
               <HourlyScreen
                 hourly={data?.hourly || []}
                 currentWind={data?.current || null}
+                daily={data?.daily || []}
               />
             </ErrorBoundary>
           </Animated.View>
         </View>
 
-        {/* Layer 3: 7-Day Forecast */}
-        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden', backgroundColor: theme.colors.paperMid }}>
-          <Animated.View style={[{ flex: 1 }, layerStyles[3]]}>
-            <ErrorBoundary layerName="7-Day">
-              <ForecastScreen daily={data?.daily || []} />
-            </ErrorBoundary>
-          </Animated.View>
-        </View>
-
-        {/* Layer 4: Science */}
+        {/* Layer 3: Science */}
         <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden', backgroundColor: theme.colors.ink }}>
-          <Animated.View style={[{ flex: 1 }, layerStyles[4]]}>
-            <ErrorBoundary layerName="Deep Data">
+          <Animated.View style={[{ flex: 1 }, layerStyles[3]]}>
+            <ErrorBoundary layerName="Science">
               <ScienceScreen
                 weather={data?.current || null}
                 today={data?.daily?.[0] || null}

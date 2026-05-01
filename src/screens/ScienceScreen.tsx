@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
-import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface ScienceScreenProps {
   weather: WeatherValues | null;
@@ -10,8 +10,39 @@ interface ScienceScreenProps {
 }
 
 export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
+  const barAnims = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
   const uvIndex = weather?.uvIndex ?? 0;
   const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
+
+  useEffect(() => {
+    if (!weather) return;
+    const targets = [
+      Math.min(uvIndex / 11, 1),
+      Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
+      Math.max(0, Math.min((weather.temperatureApparent + 10) / 60, 1)),
+      (weather.humidity ?? 0) / 100,
+    ];
+    if (reduceMotion) {
+      barAnims.forEach((anim, i) => anim.setValue(targets[i]));
+      return;
+    }
+    Animated.stagger(80, barAnims.map((anim, i) =>
+      Animated.spring(anim, { toValue: targets[i], useNativeDriver: false, damping: 18 })
+    )).start();
+  }, [weather, reduceMotion]);
 
   const formatTime = (iso: string | undefined) => {
     if (!iso) return '--:--';
@@ -22,7 +53,6 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
   const sunrise = formatTime(today?.values?.sunriseTime);
   const sunset = formatTime(today?.values?.sunsetTime);
 
-  // Calculate daylight hours
   let daylightStr = '--';
   if (today?.values?.sunriseTime && today?.values?.sunsetTime) {
     const rise = new Date(today.values.sunriseTime).getTime();
@@ -33,298 +63,255 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
     daylightStr = `${hours}h ${mins}m`;
   }
 
-  // Staggered entrance animations
-  const blockAnims = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-    new Animated.Value(0),
-  ]).current;
-  const sunAnim = useRef(new Animated.Value(0)).current;
-  const uvBarAnim = useRef(new Animated.Value(0)).current;
-  const [reduceMotion, setReduceMotion] = React.useState(false);
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Header */}
+      <View style={styles.header} accessible accessibilityRole="header">
+        <View>
+          <Text style={styles.eyebrow}>Layer 03 · Deep Data</Text>
+          <Text style={styles.title}>Science</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <Text style={styles.updatedLabel}>UV Level</Text>
+          <Text style={styles.updatedTime}>{uvLabel}</Text>
+        </View>
+      </View>
 
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => sub.remove();
-  }, []);
+      {/* 2-column metric grid — matching Layer 1 style */}
+      <View style={styles.grid}>
+        {/* UV Index */}
+        <MetricCell
+          label="UV Index"
+          value={`${uvIndex}`}
+          unit={uvLabel}
+          hint={uvIndex >= 6 ? 'Wear sunscreen — burns in under 20 min.' : 'Sun exposure is manageable right now.'}
+          barAnim={barAnims[0]}
+          color={theme.colors.accent}
+          isLeft
+          valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+        />
+        {/* Pressure */}
+        <MetricCell
+          label="Pressure"
+          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}`}
+          unit="hPa"
+          hint="Weight of air above you. Below 1000 = storms likely."
+          barAnim={barAnims[1]}
+          color={theme.colors.accent2}
+          isLeft={false}
+        />
+        {/* Feels Like */}
+        <MetricCell
+          label="Feels Like"
+          value={`${Math.round(weather?.temperatureApparent ?? 0)}°`}
+          unit={`Dew point ${Math.round(weather?.dewPoint ?? 0)}°C`}
+          hint={(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
+          barAnim={barAnims[2]}
+          color="rgba(240,235,225,0.4)"
+          isLeft
+        />
+        {/* Humidity */}
+        <MetricCell
+          label="Humidity"
+          value={`${weather?.humidity ?? 0}`}
+          unit="%"
+          hint="Above 70% feels muggy. Below 30% feels dry."
+          barAnim={barAnims[3]}
+          color={theme.colors.accent2}
+          isLeft={false}
+        />
+      </View>
 
-  useEffect(() => {
-    if (!weather) return;
-    if (reduceMotion) {
-      blockAnims.forEach(a => a.setValue(1));
-      sunAnim.setValue(1);
-      uvBarAnim.setValue(1);
-      return;
-    }
-    // Reset
-    blockAnims.forEach(a => a.setValue(0));
-    sunAnim.setValue(0);
-    uvBarAnim.setValue(0);
-    // Stagger blocks flowing in from below
-    Animated.stagger(100,
-      blockAnims.map(anim =>
-        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 80 })
-      )
-    ).start();
-    // Sun strip flows in after blocks
-    Animated.spring(sunAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      damping: 20,
-      stiffness: 70,
-      delay: 450,
-    }).start();
-    // UV bar animates smoothly
-    Animated.timing(uvBarAnim, {
-      toValue: Math.min(uvIndex / 11, 1),
-      duration: 800,
-      delay: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [weather, reduceMotion]);
+      {/* Sun strip — separate section */}
+      <View style={styles.sunSection} accessible accessibilityRole="text" accessibilityLabel={`Sunrise at ${sunrise}. Sunset at ${sunset}. Total daylight ${daylightStr}`}>
+        <View style={styles.sunRow}>
+          <View style={styles.sunItem}>
+            <Text style={styles.sunLabel}>Sunrise</Text>
+            <Text style={styles.sunVal}>{sunrise}</Text>
+          </View>
+          <View style={styles.sunDivider} />
+          <View style={styles.sunItem}>
+            <Text style={styles.sunLabel}>Sunset</Text>
+            <Text style={styles.sunVal}>{sunset}</Text>
+          </View>
+          <View style={styles.sunDivider} />
+          <View style={styles.sunItem}>
+            <Text style={styles.sunLabel}>Daylight</Text>
+            <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)' }]}>{daylightStr}</Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
+});
 
-  const makeBlockStyle = (index: number) => ({
-    opacity: blockAnims[index],
-    transform: [{
-      translateY: blockAnims[index].interpolate({
-        inputRange: [0, 1],
-        outputRange: [50, 0],
-      }),
-    }],
-  });
-
-  const uvMarkerLeft = uvBarAnim.interpolate({
+function MetricCell({
+  label, value, unit, hint, barAnim, color, isLeft, valueColor,
+}: {
+  label: string; value: string; unit: string; hint: string;
+  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string;
+}) {
+  const barWidth = barAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header} accessible accessibilityRole="header">
-        <View>
-          <Text style={styles.eyebrow}>Layer 04 · Deep Data</Text>
-          <Text style={styles.title}>Science & Extremes</Text>
-        </View>
+    <View
+      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}
+    >
+      <Text style={styles.cellLabel}>{label}</Text>
+      <Text style={[styles.cellVal, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
+      <Text style={styles.cellUnit}>{unit}</Text>
+      <View style={styles.barTrack}>
+        <Animated.View style={[styles.barFill, { width: barWidth, backgroundColor: color }]} importantForAccessibility="no" />
       </View>
-
-      {/* Science grid — 2x2, centered vertically */}
-      <View style={styles.gridArea}>
-        <View style={styles.gridRow}>
-          {/* UV */}
-          <Animated.View style={[styles.block, makeBlockStyle(0)]} accessible accessibilityRole="text" accessibilityLabel={`UV Index ${uvIndex}, ${uvLabel}. How strong the sun is right now. 6 plus means sunburn in under 20 minutes`}>
-            <Text style={styles.label}>UV Index</Text>
-            <Text style={[styles.val, { color: theme.colors.accent }]}>{uvIndex}</Text>
-            <Text style={styles.unit}>{uvLabel}</Text>
-            <View style={styles.uvBar} importantForAccessibility="no">
-              <Animated.View style={[styles.uvMarker, { left: uvMarkerLeft, marginLeft: -5.5 }]} />
-            </View>
-            <Text style={styles.sub}>
-              How strong the sun is right now.{'\n'}6+ means sunburn in under 20 min.
-            </Text>
-          </Animated.View>
-
-          {/* Pressure */}
-          <Animated.View style={[styles.block, makeBlockStyle(1)]} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel ?? 0)} hectopascals. Weight of air above you. Below 1000 means storms likely, above 1020 means clear skies`}>
-            <Text style={styles.label}>Pressure</Text>
-            <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel ?? 0)}</Text>
-            <Text style={styles.unit}>hPa</Text>
-            <Text style={styles.sub}>
-              Weight of air above you.{'\n'}Below 1000 = storms likely.{'\n'}Above 1020 = clearing.
-            </Text>
-          </Animated.View>
-        </View>
-
-        <View style={styles.gridRow}>
-          {/* Feels Like */}
-          <Animated.View style={[styles.block, makeBlockStyle(2)]} accessible accessibilityRole="text" accessibilityLabel={`Feels like ${Math.round(weather?.temperatureApparent ?? 0)} degrees. Dew point ${Math.round(weather?.dewPoint ?? 0)} degrees. ${(weather?.dewPoint ?? 0) > 15 ? 'Muggy, sweat won\'t evaporate easily' : 'Comfortable moisture level'}`}>
-            <Text style={styles.label}>Feels Like</Text>
-            <Text style={styles.val}>{Math.round(weather?.temperatureApparent ?? 0)}°</Text>
-            <Text style={styles.unit}>Dew point {Math.round(weather?.dewPoint ?? 0)}°C</Text>
-            <Text style={styles.sub}>
-              How temperature actually feels.{'\n'}
-              {(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate.' : 'Comfortable moisture level.'}
-            </Text>
-          </Animated.View>
-
-          {/* Humidity */}
-          <Animated.View style={[styles.block, makeBlockStyle(3)]} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity ?? 0} percent. Moisture in the air. Above 70 percent feels muggy, below 30 percent feels dry`}>
-            <Text style={styles.label}>Humidity</Text>
-            <Text style={[styles.val, { color: theme.colors.accent2 }]}>
-              {weather?.humidity ?? 0}
-            </Text>
-            <Text style={styles.unit}>%</Text>
-            <Text style={styles.sub}>
-              Moisture in the air.{'\n'}Above 70% feels muggy.{'\n'}Below 30% feels dry.
-            </Text>
-          </Animated.View>
-        </View>
-      </View>
-
-      {/* Sun strip */}
-      <Animated.View
-        style={[
-          styles.sunStrip,
-          {
-            opacity: sunAnim,
-            transform: [{
-              translateY: sunAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [30, 0],
-              }),
-            }],
-          },
-        ]}
-        accessible
-        accessibilityRole="text"
-        accessibilityLabel={`Sunrise at ${sunrise}. Sunset at ${sunset}. Total daylight ${daylightStr}`}
-      >
-        <View style={styles.sunCol}>
-          <Text style={styles.sunIcon}>☀</Text>
-          <Text style={styles.sunLabel}>Sunrise</Text>
-          <Text style={styles.sunVal}>{sunrise}</Text>
-        </View>
-        <View style={styles.sunDivider} />
-        <View style={styles.sunCol}>
-          <Text style={styles.sunIcon}>🌙</Text>
-          <Text style={styles.sunLabel}>Sunset</Text>
-          <Text style={styles.sunVal}>{sunset}</Text>
-        </View>
-        <View style={styles.sunDivider} />
-        <View style={styles.sunCol}>
-          <Text style={styles.sunIcon}>◐</Text>
-          <Text style={styles.sunLabel}>Daylight</Text>
-          <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)' }]}>
-            {daylightStr}
-          </Text>
-        </View>
-      </Animated.View>
+      <Text style={styles.cellHint}>{hint}</Text>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.ink,
   },
+  content: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: sh(12),
+    paddingBottom: 16,
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.55)',
-    marginBottom: 6,
+    color: 'rgba(240,235,225,0.5)',
   },
   title: {
-    fontFamily: theme.fonts.serifItalic,
-    fontSize: ms(28),
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: 28,
     color: theme.colors.paper,
+    marginTop: 4,
   },
-  gridArea: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: sw(20),
+  headerRight: {
+    alignItems: 'flex-end',
   },
-  gridRow: {
-    flexDirection: 'row',
-    marginBottom: sh(8),
-  },
-  block: {
-    flex: 1,
-    margin: sw(6),
-    padding: sw(18),
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(240,235,225,0.08)',
-    backgroundColor: 'rgba(240,235,225,0.03)',
-  },
-  label: {
+  updatedLabel: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    letterSpacing: 1.8,
+    letterSpacing: 1,
+    color: 'rgba(240,235,225,0.5)',
+  },
+  updatedTime: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 13,
+    color: 'rgba(240,235,225,0.7)',
+    marginTop: 2,
+  },
+
+  /* ---- 2-column grid (matches Layer 1) ---- */
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(240,235,225,0.08)',
+  },
+  cell: {
+    width: '50%',
+    paddingVertical: 20,
+    paddingHorizontal: sw(20),
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(240,235,225,0.08)',
+  },
+  cellLeft: {
+    borderRightWidth: 0.5,
+    borderRightColor: 'rgba(240,235,225,0.08)',
+  },
+  cellRight: {},
+  cellLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    color: 'rgba(240,235,225,0.55)',
+    color: 'rgba(240,235,225,0.5)',
     marginBottom: 10,
   },
-  val: {
+  cellVal: {
     fontFamily: theme.fonts.serifBlack,
     fontSize: ms(30),
     color: theme.colors.paper,
     lineHeight: ms(32),
   },
-  unit: {
+  cellUnit: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
+    fontSize: 11,
     color: 'rgba(240,235,225,0.55)',
-    marginTop: 2,
+    marginTop: 4,
   },
-  sub: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.45)',
-    marginTop: 8,
-    lineHeight: 15,
-  },
-  uvBar: {
+  barTrack: {
     height: 3,
     borderRadius: 2,
-    marginTop: 12,
-    position: 'relative',
-    overflow: 'visible',
-    backgroundColor: 'rgba(240,235,225,0.08)',
+    backgroundColor: 'rgba(240,235,225,0.06)',
+    marginTop: 14,
+    overflow: 'hidden',
   },
-  uvMarker: {
-    position: 'absolute',
-    top: -4,
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: theme.colors.paper,
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
   },
-  sunStrip: {
+  cellHint: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: 'rgba(240,235,225,0.45)',
+    marginTop: 10,
+    lineHeight: 16,
+  },
+
+  /* ---- Sun section (separate) ---- */
+  sunSection: {
+    marginTop: 24,
+    marginHorizontal: sw(22),
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(240,235,225,0.1)',
+    paddingTop: 20,
+  },
+  sunRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: sw(26),
-    marginBottom: sh(40),
-    paddingVertical: sh(16),
-    paddingHorizontal: sw(16),
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(240,235,225,0.08)',
-    backgroundColor: 'rgba(240,235,225,0.03)',
   },
-  sunCol: {
+  sunItem: {
     flex: 1,
     alignItems: 'center',
   },
   sunDivider: {
     width: 0.5,
-    height: 36,
+    height: 32,
     backgroundColor: 'rgba(240,235,225,0.12)',
-  },
-  sunIcon: {
-    fontSize: 16,
-    marginBottom: 4,
   },
   sunLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 9,
+    fontSize: 10,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.55)',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   sunVal: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(16),
+    fontSize: 18,
     color: theme.colors.paper,
   },
 });

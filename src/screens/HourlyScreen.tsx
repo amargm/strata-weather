@@ -1,31 +1,59 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  Animated,
+  AccessibilityInfo,
 } from 'react-native';
 import { theme } from '../utils/theme';
-import { WEATHER_CODES } from '../utils/constants';
-import { TimelineInterval, WeatherValues } from '../types/weather';
-import { getStatusBarPadding, sw, ms } from '../utils/responsive';
+import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
+import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
+import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
-const ITEM_WIDTH = sw(68);
-
-const WIND_DIR_FULL: Record<string, string> = {
-  N: 'North', NNE: 'North-northeast', NE: 'Northeast', ENE: 'East-northeast',
-  E: 'East', ESE: 'East-southeast', SE: 'Southeast', SSE: 'South-southeast',
-  S: 'South', SSW: 'South-southwest', SW: 'Southwest', WSW: 'West-southwest',
-  W: 'West', WNW: 'West-northwest', NW: 'Northwest', NNW: 'North-northwest',
-};
+const ITEM_WIDTH = sw(58);
 
 interface HourlyScreenProps {
   hourly: TimelineInterval[];
   currentWind: WeatherValues | null;
+  daily: DailyInterval[];
 }
 
-export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
+export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind, daily }: HourlyScreenProps) {
   const scrollRef = useRef<ScrollView>(null);
+
+  // Forecast bar range
+  const { minTemp, range } = React.useMemo(() => {
+    const allTemps = daily.flatMap(d => [d.values.temperatureMax, d.values.temperatureMin]);
+    const min = Math.min(...allTemps);
+    const max = Math.max(...allTemps);
+    return { minTemp: min, range: max - min || 1 };
+  }, [daily]);
+
+  // Staggered row animations for forecast
+  const rowAnims = useRef(daily.map(() => new Animated.Value(0))).current;
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!daily.length) return;
+    if (reduceMotion) {
+      rowAnims.forEach(a => a.setValue(1));
+      return;
+    }
+    rowAnims.forEach(a => a.setValue(0));
+    Animated.stagger(50,
+      rowAnims.map(anim =>
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 90 })
+      )
+    ).start();
+  }, [daily, reduceMotion]);
 
   const formatHour = (iso: string, index: number) => {
     if (index === 0) return 'NOW';
@@ -34,6 +62,17 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
     const ampm = h >= 12 ? 'PM' : 'AM';
     const hr = h % 12 || 12;
     return `${hr}${ampm}`;
+  };
+
+  const formatDay = (iso: string, index: number) => {
+    if (index === 0) return 'Today';
+    const d = new Date(iso);
+    return DAYS[d.getDay()];
+  };
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
   };
 
   const windDirText = (deg: number) => {
@@ -46,102 +85,126 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
-          <Text style={styles.eyebrow}>Layer 02 · Hourly</Text>
-          <Text style={styles.title}>Hourly</Text>
+          <Text style={styles.eyebrow}>Layer 02 · Timeline</Text>
+          <Text style={styles.title}>Hours & Days</Text>
         </View>
-        <Text style={styles.subtitle}>Next {hourly.length} hours →</Text>
+        <View style={styles.windBadge}>
+          <Text style={styles.windBadgeVal}>
+            {Math.round((currentWind?.windSpeed ?? 0) * 3.6)}
+          </Text>
+          <Text style={styles.windBadgeUnit}>km/h {windDirText(currentWind?.windDirection ?? 0)}</Text>
+        </View>
       </View>
 
-      {/* Tape timeline */}
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tapeContent}
-        style={styles.tape}
-        accessibilityRole="list"
-        accessibilityLabel="Hourly forecast timeline"
-      >
-        {hourly.map((item, index) => {
-          const code = item.values.weatherCode;
-          const condition = WEATHER_CODES[code] || WEATHER_CODES[1000];
-          const isNow = index === 0;
+      {/* Compact hourly tape */}
+      <View style={styles.tapeSection}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tapeContent}
+          style={styles.tape}
+          accessibilityRole="list"
+          accessibilityLabel="Hourly forecast timeline"
+        >
+          {hourly.map((item, index) => {
+            const code = item.values.weatherCode;
+            const condition = WEATHER_CODES[code] || WEATHER_CODES[1000];
+            const isNow = index === 0;
 
-          return (
-            <View
-              key={item.startTime}
-              style={[styles.tapeItem, isNow && styles.tapeItemNow]}
-              accessible
-              accessibilityRole="text"
-              accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${item.values.precipitationProbability} percent precipitation chance`}
-            >
-              <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
-                {formatHour(item.startTime, index)}
-              </Text>
-              <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
-                {Math.round(item.values.temperature)}°
-              </Text>
-              <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
-              <Text style={[styles.tapeCondLabel, isNow && styles.tapeTextMuted]} numberOfLines={1}>
-                {condition.label}
-              </Text>
-              <View style={styles.tapePrecip}>
-                <View style={styles.tapePrecipBarWrap}>
-                  <View
-                    style={[
-                      styles.tapePrecipBar,
-                      { height: `${item.values.precipitationProbability}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
-                  {item.values.precipitationProbability}%
+            return (
+              <View
+                key={item.startTime}
+                style={[styles.tapeItem, isNow && styles.tapeItemNow]}
+                accessible
+                accessibilityRole="text"
+                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${item.values.precipitationProbability} percent precipitation chance`}
+              >
+                <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
+                  {formatHour(item.startTime, index)}
                 </Text>
+                <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
+                  {Math.round(item.values.temperature)}°
+                </Text>
+                <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
+                <Text
+                  style={[styles.tapeCondLabel, isNow && styles.tapeTextMuted]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {condition.label.length > 8 ? condition.label.split(' ')[0] : condition.label}
+                </Text>
+                {item.values.precipitationProbability > 0 && (
+                  <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
+                    💧{item.values.precipitationProbability}%
+                  </Text>
+                )}
               </View>
-            </View>
-          );
-        })}
-      </ScrollView>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {/* Details area — fills remaining vertical space */}
-      <View style={styles.detailsArea}>
-        {/* Wind section — 2 columns */}
-        <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round((currentWind?.windSpeed ?? 0) * 3.6)} kilometers per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection ?? 0)] || windDirText(currentWind?.windDirection ?? 0)} ${Math.round(currentWind?.windDirection ?? 0)} degrees${(currentWind?.windGust ?? 0) > 0 ? `, gusts to ${Math.round((currentWind?.windGust ?? 0) * 3.6)} kilometers per hour` : ''}`} accessibilityLiveRegion="polite">
-          <View style={styles.windMain}>
-            <Text style={styles.windLabelSm}>Wind · Sustained</Text>
-            <Text style={styles.windBig}>
-              {Math.round((currentWind?.windSpeed ?? 0) * 3.6)}
-              <Text style={styles.windUnitSm}> km/h</Text>
-            </Text>
-            <Text style={styles.windHint}>Average wind speed at 10 m height</Text>
-          </View>
-          <View style={styles.windSide}>
-            <Text style={styles.windDirLabel}>Direction</Text>
-            <Text style={styles.windDirBig}>
-              {windDirText(currentWind?.windDirection ?? 0)}
-            </Text>
-            <Text style={styles.windDirDeg}>{Math.round(currentWind?.windDirection ?? 0)}°</Text>
-            {(currentWind?.windGust ?? 0) > 0 && (
-              <Text style={styles.windGust}>
-                ▲ Gusts {Math.round((currentWind?.windGust ?? 0) * 3.6)} km/h
-              </Text>
-            )}
+      {/* 7-Day forecast rows */}
+      <View style={styles.forecastSection}>
+        <View style={styles.forecastHeader}>
+          <Text style={styles.forecastTitle}>{daily.length}-Day Forecast</Text>
+          <View style={styles.legend}>
+            <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
+            <Text style={styles.legendText}>Hi</Text>
+            <View style={[styles.legendDot, { backgroundColor: theme.colors.accent2 }]} />
+            <Text style={styles.legendText}>Lo</Text>
           </View>
         </View>
 
-        {/* Precipitation outlook */}
-        <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability ?? 0} percent now. ${(hourly[3]?.values.precipitationProbability ?? 0) > (hourly[0]?.values.precipitationProbability ?? 0) ? 'Rising' : (hourly[3]?.values.precipitationProbability ?? 0) < (hourly[0]?.values.precipitationProbability ?? 0) ? 'Dropping' : 'Holding'} to ${hourly[3]?.values.precipitationProbability ?? 0} percent by ${hourly[3] ? formatHour(hourly[3].startTime, 3) : 'unknown'}`}>
-          <Text style={styles.precipLabel}>Precipitation Outlook</Text>
-          <Text style={styles.windHint}>Chance of precipitation in your area</Text>
-          <Text style={styles.precipText}>
-            {hourly[0]?.values.precipitationProbability ?? 0}% chance this hour.{' '}
-            {(() => {
-              const now = hourly[0]?.values.precipitationProbability ?? 0;
-              const later = hourly[3]?.values.precipitationProbability ?? 0;
-              const trend = later > now ? 'Rising to' : later < now ? 'Dropping to' : 'Holding at';
-              return `${trend} ${later}% by ${hourly[3] ? formatHour(hourly[3].startTime, 3) : '--'}.`;
-            })()}
-          </Text>
+        <View style={styles.table}>
+          {daily.map((day, index) => {
+            const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[1000];
+            const barLeft = ((day.values.temperatureMin - minTemp) / range) * 100;
+            const barWidth = ((day.values.temperatureMax - day.values.temperatureMin) / range) * 100;
+
+            const rowOpacity = rowAnims[index] || new Animated.Value(1);
+            const rowTranslateY = rowOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: [30, 0],
+            });
+
+            return (
+              <Animated.View
+                key={day.startTime}
+                style={[
+                  styles.row,
+                  {
+                    opacity: rowOpacity,
+                    transform: [{ translateY: rowTranslateY }],
+                  },
+                ]}
+                accessible
+                accessibilityRole="text"
+                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}. ${day.values.precipitationProbability} percent precipitation`}
+              >
+                <View style={styles.dayCol}>
+                  <Text style={styles.fcDay}>{formatDay(day.startTime, index)}</Text>
+                  <Text style={styles.fcDate}>{formatDate(day.startTime)}</Text>
+                </View>
+                <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
+                <View style={styles.barCol}>
+                  <View style={styles.barTrack}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        { left: `${barLeft}%`, width: `${barWidth}%` },
+                      ]}
+                    />
+                  </View>
+                </View>
+                <View style={styles.tempsCol}>
+                  <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
+                  <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
+                </View>
+              </Animated.View>
+            );
+          })}
         </View>
       </View>
     </View>
@@ -159,11 +222,11 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: 20,
+    paddingBottom: 12,
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 28,
+    fontSize: ms(24),
     color: theme.colors.ink,
   },
   eyebrow: {
@@ -174,44 +237,58 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginBottom: 2,
   },
-  subtitle: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: theme.colors.muted,
+  windBadge: {
+    alignItems: 'flex-end',
   },
-  tape: {
-    paddingHorizontal: sw(28),
+  windBadgeVal: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: ms(18),
+    color: theme.colors.ink,
   },
-  tapeContent: {
-    gap: 0,
-    paddingRight: sw(28),
-  },
-  tapeItem: {
-    width: ITEM_WIDTH,
-    alignItems: 'center',
-    paddingTop: 14,
-    paddingBottom: 4,
-    borderRightWidth: 0.5,
-    borderRightColor: theme.colors.faint,
-  },
-  tapeItemNow: {
-    backgroundColor: theme.colors.ink,
-  },
-  tapeHr: {
+  windBadgeUnit: {
     fontFamily: theme.fonts.mono,
     fontSize: 9,
     letterSpacing: 1,
     color: theme.colors.muted,
     textTransform: 'uppercase',
-    marginBottom: 8,
+  },
+
+  /* --- Tape --- */
+  tapeSection: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.faint,
+  },
+  tape: {
+    paddingHorizontal: sw(20),
+  },
+  tapeContent: {
+    gap: 0,
+    paddingRight: sw(20),
+  },
+  tapeItem: {
+    width: ITEM_WIDTH,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRightWidth: 0.5,
+    borderRightColor: theme.colors.faint,
+  },
+  tapeItemNow: {
+    backgroundColor: theme.colors.ink,
+    borderRadius: 4,
+  },
+  tapeHr: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1,
+    color: theme.colors.muted,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   tapeTemp: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 22,
+    fontSize: 18,
     color: theme.colors.ink,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   tapeTextLight: {
     color: theme.colors.paper,
@@ -220,138 +297,122 @@ const styles = StyleSheet.create({
     color: 'rgba(240,235,225,0.5)',
   },
   tapeCond: {
-    fontSize: 18,
-    marginVertical: 4,
+    fontSize: 14,
+    marginVertical: 2,
   },
   tapeCondLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 7,
     color: theme.colors.muted,
     letterSpacing: 0.3,
-    marginBottom: 6,
     textAlign: 'center',
-  },
-  tapePrecip: {
-    alignItems: 'center',
-    gap: 2,
-    marginTop: 'auto' as any,
-    paddingBottom: 10,
-  },
-  tapePrecipBarWrap: {
-    width: 3,
-    height: 28,
-    backgroundColor: theme.colors.faint,
-    borderRadius: 2,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  tapePrecipBar: {
-    width: '100%',
-    borderRadius: 2,
-    backgroundColor: theme.colors.accent2,
+    width: ITEM_WIDTH - 8,
   },
   tapePrecipVal: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: theme.colors.muted,
-    letterSpacing: 0.5,
-  },
-  detailsArea: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingBottom: sw(40),
-  },
-  windRibbon: {
-    marginHorizontal: sw(28),
-    backgroundColor: theme.colors.faint,
-    borderRadius: 2,
-    padding: sw(16),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  windMain: {
-    flex: 1,
-  },
-  windSide: {
-    alignItems: 'center',
-    paddingLeft: sw(16),
-    borderLeftWidth: 0.5,
-    borderLeftColor: theme.colors.faint,
-    minWidth: sw(72),
-  },
-  windDirLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: theme.colors.muted,
-    marginBottom: 4,
-  },
-  windDirBig: {
-    fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(26),
-    color: theme.colors.ink,
-  },
-  windDirDeg: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: theme.colors.muted,
+    fontSize: 8,
+    color: theme.colors.accent2,
     marginTop: 2,
-  },
-  windLabelSm: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
-    color: theme.colors.muted,
-    marginBottom: 4,
-  },
-  windBig: {
-    fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(32),
-    color: theme.colors.ink,
-    lineHeight: ms(32),
-  },
-  windUnitSm: {
-    fontSize: 12,
-    fontFamily: theme.fonts.mono,
-    color: theme.colors.muted,
   },
 
-  windGust: {
+  /* --- Forecast --- */
+  forecastSection: {
+    flex: 1,
+    paddingHorizontal: sw(20),
+    justifyContent: 'center',
+  },
+  forecastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: sw(4),
+  },
+  forecastTitle: {
     fontFamily: theme.fonts.mono,
     fontSize: 9,
-    color: theme.colors.accent,
-    marginTop: 2,
-    letterSpacing: 0.5,
-  },
-  windHint: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(15,14,12,0.45)',
-    marginTop: 3,
-  },
-  precipOutlook: {
-    marginHorizontal: sw(28),
-    marginTop: 18,
-    paddingVertical: 16,
-    paddingHorizontal: sw(18),
-    borderLeftWidth: 2,
-    borderLeftColor: theme.colors.accent2,
-    backgroundColor: 'rgba(28,93,196,0.06)',
-  },
-  precipLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     color: theme.colors.muted,
-    marginBottom: 4,
   },
-  precipText: {
-    fontFamily: theme.fonts.serifItalic,
-    fontSize: 15,
+  legend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  legendDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  legendText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+  },
+  table: {},
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: sh(9),
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.faint,
+  },
+  dayCol: {
+    width: sw(60),
+  },
+  fcDay: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: ms(13),
     color: theme.colors.ink,
+  },
+  fcDate: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    letterSpacing: 0.8,
+    color: theme.colors.muted,
+    marginTop: 1,
+  },
+  fcIcon: {
+    fontSize: 18,
+    width: sw(28),
+    textAlign: 'center',
+  },
+  barCol: {
+    flex: 1,
+    paddingHorizontal: sw(8),
+  },
+  barTrack: {
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: theme.colors.faint,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  barFill: {
+    position: 'absolute',
+    top: 0,
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: theme.colors.accent,
+  },
+  tempsCol: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+    minWidth: sw(52),
+    justifyContent: 'flex-end',
+  },
+  fcHi: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: ms(14),
+    color: theme.colors.accent,
+  },
+  fcLo: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: theme.colors.accent2,
   },
 });
