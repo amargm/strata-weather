@@ -8,9 +8,9 @@ import {
 import { theme } from '../utils/theme';
 import { WEATHER_CODES } from '../utils/constants';
 import { TimelineInterval, WeatherValues } from '../types/weather';
-import { getStatusBarPadding, sw } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
-const ITEM_WIDTH = 68;
+const ITEM_WIDTH = sw(68);
 
 const WIND_DIR_FULL: Record<string, string> = {
   N: 'North', NNE: 'North-northeast', NE: 'Northeast', ENE: 'East-northeast',
@@ -182,11 +182,11 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
   },
   tape: {
-    paddingHorizontal: 28,
+    paddingHorizontal: sw(28),
   },
   tapeContent: {
     gap: 0,
-    paddingRight: 28,
+    paddingRight: sw(28),
   },
   tapeItem: {
     width: ITEM_WIDTH,
@@ -259,13 +259,13 @@ const styles = StyleSheet.create({
   detailsArea: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 40,
+    paddingBottom: sw(40),
   },
   windRibbon: {
-    marginHorizontal: 28,
+    marginHorizontal: sw(28),
     backgroundColor: theme.colors.faint,
     borderRadius: 2,
-    padding: 18,
+    padding: sw(16),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -275,10 +275,10 @@ const styles = StyleSheet.create({
   },
   windSide: {
     alignItems: 'center',
-    paddingLeft: 18,
+    paddingLeft: sw(16),
     borderLeftWidth: 0.5,
     borderLeftColor: theme.colors.faint,
-    minWidth: 80,
+    minWidth: sw(72),
   },
   windDirLabel: {
     fontFamily: theme.fonts.mono,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   windDirBig: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 28,
+    fontSize: ms(26),
     color: theme.colors.ink,
   },
   windDirDeg: {
@@ -309,9 +309,9 @@ const styles = StyleSheet.create({
   },
   windBig: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 36,
+    fontSize: ms(32),
     color: theme.colors.ink,
-    lineHeight: 36,
+    lineHeight: ms(32),
   },
   windUnitSm: {
     fontSize: 12,
@@ -333,10 +333,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   precipOutlook: {
-    marginHorizontal: 28,
+    marginHorizontal: sw(28),
     marginTop: 18,
     paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingHorizontal: sw(18),
     borderLeftWidth: 2,
     borderLeftColor: theme.colors.accent2,
     backgroundColor: 'rgba(28,93,196,0.06)',

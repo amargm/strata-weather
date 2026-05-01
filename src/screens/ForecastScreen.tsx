@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { DailyInterval } from '../types/weather';
-import { getStatusBarPadding, sw } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface ForecastScreenProps {
   daily: DailyInterval[];
@@ -47,11 +47,11 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
 
       {/* Column hints */}
       <View style={styles.colHints}>
-        <Text style={[styles.colHint, { width: 70 }]}>Day</Text>
-        <Text style={[styles.colHint, { width: 28, textAlign: 'center' }]}></Text>
-        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: 6 }]}>Range</Text>
-        <Text style={[styles.colHint, { width: 60 }]}>Hi / Lo</Text>
-        <Text style={[styles.colHint, { width: 32, textAlign: 'right' }]}>%</Text>
+        <Text style={[styles.colHint, { width: sw(70) }]}>Day</Text>
+        <Text style={[styles.colHint, { width: sw(28), textAlign: 'center' }]}></Text>
+        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: sw(6) }]}>Range</Text>
+        <Text style={[styles.colHint, { width: sw(60) }]}>Hi / Lo</Text>
+        <Text style={[styles.colHint, { width: sw(32), textAlign: 'right' }]}>%</Text>
       </View>
 
       {/* Forecast rows */}
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   colHints: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: sw(14),
     paddingVertical: 8,
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
@@ -174,14 +174,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
     paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingHorizontal: sw(14),
   },
   dayCol: {
-    width: 70,
+    width: sw(70),
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 16,
+    fontSize: ms(15),
     color: theme.colors.ink,
   },
   fcDaySm: {
@@ -192,12 +192,12 @@ const styles = StyleSheet.create({
   },
   fcIcon: {
     fontSize: 20,
-    width: 28,
+    width: sw(28),
     textAlign: 'center',
   },
   barCell: {
     flex: 1,
-    paddingHorizontal: 6,
+    paddingHorizontal: sw(6),
   },
   barTrack: {
     height: 5,
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
   tempsCol: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    width: 60,
+    width: sw(60),
   },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 17,
+    fontSize: ms(16),
     color: theme.colors.accent,
   },
   fcLo: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     color: theme.colors.muted,
-    width: 32,
+    width: sw(32),
     textAlign: 'right',
   },
 });

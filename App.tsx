@@ -42,6 +42,7 @@ import { HourlyScreen } from './src/screens/HourlyScreen';
 import { ForecastScreen } from './src/screens/ForecastScreen';
 import { ScienceScreen } from './src/screens/ScienceScreen';
 import { theme } from './src/utils/theme';
+import { sw, sh } from './src/utils/responsive';
 import { WEATHER_CODES } from './src/utils/constants';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { WeatherEffects } from './src/components/WeatherEffects';
@@ -543,14 +544,14 @@ const styles = StyleSheet.create({
   },
   navContainer: {
     position: 'absolute',
-    right: 16,
-    bottom: 40,
+    right: sw(16),
+    bottom: sh(40),
     alignItems: 'center',
   },
   dotsRow: {
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 10,
+    gap: sh(10),
   },
   dot: {
     width: 6,
@@ -558,7 +559,7 @@ const styles = StyleSheet.create({
   },
   swipeHint: {
     position: 'absolute',
-    bottom: 90,
+    bottom: sh(90),
     left: 0,
     right: 0,
     alignItems: 'center',

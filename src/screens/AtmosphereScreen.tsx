@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   cell: {
     width: '50%',
     paddingVertical: 20,
-    paddingHorizontal: 22,
+    paddingHorizontal: sw(20),
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(240,235,225,0.08)',
   },
@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
   },
   cellVal: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 34,
+    fontSize: ms(30),
     color: theme.colors.paper,
-    lineHeight: 36,
+    lineHeight: ms(32),
   },
   cellUnit: {
     fontFamily: theme.fonts.mono,
@@ -279,13 +279,13 @@ const styles = StyleSheet.create({
 
   /* ---- Wind alert ---- */
   alertStrip: {
-    marginHorizontal: 22,
+    marginHorizontal: sw(22),
     marginTop: 20,
     backgroundColor: 'rgba(196,65,28,0.12)',
     borderWidth: 0.5,
     borderColor: 'rgba(196,65,28,0.35)',
     borderRadius: 4,
-    padding: 14,
+    padding: sw(14),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

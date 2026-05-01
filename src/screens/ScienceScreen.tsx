@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
-import { getStatusBarPadding, sw } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface ScienceScreenProps {
   weather: WeatherValues | null;
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: getStatusBarPadding(),
-    paddingHorizontal: 28,
+    paddingHorizontal: sw(28),
     paddingBottom: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(240,235,225,0.1)',
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   block: {
     width: '50%',
-    padding: 18,
+    padding: sw(16),
     borderRightWidth: 0.5,
     borderRightColor: 'rgba(240,235,225,0.08)',
     borderBottomWidth: 0.5,
@@ -168,9 +168,9 @@ const styles = StyleSheet.create({
   },
   val: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 32,
+    fontSize: ms(28),
     color: theme.colors.paper,
-    lineHeight: 32,
+    lineHeight: ms(30),
   },
   unit: {
     fontFamily: theme.fonts.mono,
@@ -200,13 +200,14 @@ const styles = StyleSheet.create({
     height: 11,
     borderRadius: 6,
     backgroundColor: theme.colors.paper,
+    marginLeft: -5.5,
   },
   sunStrip: {
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(240,235,225,0.1)',
     flexDirection: 'row',
     paddingVertical: 16,
-    paddingHorizontal: 28,
+    paddingHorizontal: sw(28),
     justifyContent: 'space-between',
     marginTop: 20,
   },
