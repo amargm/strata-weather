@@ -43,6 +43,7 @@ import { WEATHER_CODES } from './src/utils/constants';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { WeatherEffects } from './src/components/WeatherEffects';
 import { getExpressiveDescription, getSeasonalColors } from './src/utils/weatherPoetry';
+import { LoadingScreen } from './src/components/LoadingScreen';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -295,21 +296,7 @@ export default function App(props: { initialLayer?: number }) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
-        {/* Skeleton blocks */}
-        <View style={styles.skeletonTop}>
-          <View style={[styles.skeletonBlock, { width: 100, height: 10 }]} />
-          <View style={[styles.skeletonBlock, { width: 160, height: 16, marginTop: 8 }]} />
-        </View>
-        <View style={styles.skeletonTemp}>
-          <View style={[styles.skeletonBlock, { width: 180, height: 80, borderRadius: 4 }]} />
-        </View>
-        <View style={styles.skeletonRow}>
-          <View style={[styles.skeletonBlock, { width: 60, height: 10 }]} />
-          <View style={[styles.skeletonBlock, { width: 80, height: 10 }]} />
-        </View>
-        <RNAnimated.Text style={[styles.loadingText, { opacity: tipFade }]}>
-          {LOADING_TIPS[tipIndex]}
-        </RNAnimated.Text>
+        <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
       </View>
     );
   }
@@ -481,38 +468,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.colors.paper,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  loadingText: {
-    fontFamily: theme.fonts.serifItalic,
-    fontSize: 16,
-    color: theme.colors.muted,
-    marginTop: 32,
-  },
-  // Skeleton shimmer blocks
-  skeletonTop: {
-    alignItems: 'flex-start',
-    width: '100%',
-    paddingLeft: 28,
-  },
-  skeletonTemp: {
-    alignItems: 'flex-start',
-    width: '100%',
-    paddingLeft: 28,
-    marginTop: 40,
-  },
-  skeletonRow: {
-    flexDirection: 'row',
-    gap: 16,
-    width: '100%',
-    paddingLeft: 28,
-    marginTop: 20,
-  },
-  skeletonBlock: {
-    backgroundColor: 'rgba(15,14,12,0.06)',
-    borderRadius: 3,
   },
   // Friendly error
   errorIcon: {
