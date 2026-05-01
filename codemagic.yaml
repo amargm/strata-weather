@@ -30,6 +30,7 @@ workflows:
 
       - name: Bundle React Native JS
         script: |
+          mkdir -p android/app/src/main/assets
           npx react-native bundle \
             --platform android \
             --dev false \
@@ -80,6 +81,7 @@ workflows:
 
       - name: Bundle React Native JS
         script: |
+          mkdir -p android/app/src/main/assets
           npx react-native bundle \
             --platform android \
             --dev false \
