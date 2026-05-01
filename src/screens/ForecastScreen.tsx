@@ -46,11 +46,11 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
 
       {/* Column hints */}
       <View style={styles.colHints}>
-        <Text style={styles.colHint}>Day</Text>
-        <Text style={styles.colHint}></Text>
-        <Text style={styles.colHint}>Temp range</Text>
-        <Text style={styles.colHint}>Hi / Lo</Text>
-        <Text style={styles.colHint}>Rain %</Text>
+        <Text style={[styles.colHint, { width: 76 }]}>Day</Text>
+        <Text style={[styles.colHint, { width: 32, textAlign: 'center' }]}></Text>
+        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: 8 }]}>Range</Text>
+        <Text style={[styles.colHint, { width: 65 }]}>Hi / Lo</Text>
+        <Text style={[styles.colHint, { width: 35, textAlign: 'right' }]}>Rain</Text>
       </View>
 
       {/* Forecast rows */}
@@ -146,9 +146,9 @@ const styles = StyleSheet.create({
   },
   colHints: {
     flexDirection: 'row',
-    paddingHorizontal: 28,
-    paddingVertical: 6,
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
   },
@@ -211,6 +211,7 @@ const styles = StyleSheet.create({
   tempsCol: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    width: 65,
   },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,

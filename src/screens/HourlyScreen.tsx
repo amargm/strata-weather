@@ -10,7 +10,7 @@ import { theme } from '../utils/theme';
 import { WEATHER_CODES } from '../utils/constants';
 import { TimelineInterval, WeatherValues } from '../types/weather';
 
-const ITEM_WIDTH = 60;
+const ITEM_WIDTH = 68;
 
 const WIND_DIR_FULL: Record<string, string> = {
   N: 'North', NNE: 'North-northeast', NE: 'Northeast', ENE: 'East-northeast',
@@ -82,6 +82,9 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 {Math.round(item.values.temperature)}°
               </Text>
               <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
+              <Text style={[styles.tapeCondLabel, isNow && styles.tapeTextMuted]} numberOfLines={1}>
+                {condition.label}
+              </Text>
               <View style={styles.tapePrecip}>
                 <View style={styles.tapePrecipBarWrap}>
                   <View
@@ -100,38 +103,42 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         })}
       </ScrollView>
 
-      {/* Wind ribbon */}
-      <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round(currentWind?.windSpeed || 0)} miles per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection || 0)] || windDirText(currentWind?.windDirection || 0)} ${Math.round(currentWind?.windDirection || 0)} degrees${(currentWind?.windGust || 0) > 0 ? `, gusts to ${Math.round(currentWind?.windGust || 0)} miles per hour` : ''}`} accessibilityLiveRegion="polite">
-        <View>
-          <Text style={styles.windLabelSm}>Wind · Sustained</Text>
-          <Text style={styles.windBig}>
-            {Math.round(currentWind?.windSpeed || 0)}
-            <Text style={styles.windUnitSm}> mph</Text>
-          </Text>
-          <Text style={styles.windHint}>Steady average speed near ground</Text>
-          <Text style={styles.windDirText}>
-            {windDirText(currentWind?.windDirection || 0)} {Math.round(currentWind?.windDirection || 0)}°
-          </Text>
-          {(currentWind?.windGust || 0) > 0 && (
-            <Text style={styles.windGust}>
-              ▲ Gusts to {Math.round(currentWind?.windGust || 0)} mph
+      {/* Details area — fills remaining vertical space */}
+      <View style={styles.detailsArea}>
+        {/* Wind section — 2 columns */}
+        <View style={styles.windRibbon} accessible accessibilityRole="text" accessibilityLabel={`Wind sustained ${Math.round(currentWind?.windSpeed ?? 0)} miles per hour, direction ${WIND_DIR_FULL[windDirText(currentWind?.windDirection ?? 0)] || windDirText(currentWind?.windDirection ?? 0)} ${Math.round(currentWind?.windDirection ?? 0)} degrees${(currentWind?.windGust ?? 0) > 0 ? `, gusts to ${Math.round(currentWind?.windGust ?? 0)} miles per hour` : ''}`} accessibilityLiveRegion="polite">
+          <View style={styles.windMain}>
+            <Text style={styles.windLabelSm}>Wind · Sustained</Text>
+            <Text style={styles.windBig}>
+              {Math.round(currentWind?.windSpeed ?? 0)}
+              <Text style={styles.windUnitSm}> mph</Text>
             </Text>
-          )}
-          {(currentWind?.windGust || 0) > 0 && (
-            <Text style={styles.windHint}>Brief bursts · can be 2–3× sustained</Text>
-          )}
+            <Text style={styles.windHint}>Steady average speed near ground</Text>
+          </View>
+          <View style={styles.windSide}>
+            <Text style={styles.windDirLabel}>Direction</Text>
+            <Text style={styles.windDirBig}>
+              {windDirText(currentWind?.windDirection ?? 0)}
+            </Text>
+            <Text style={styles.windDirDeg}>{Math.round(currentWind?.windDirection ?? 0)}°</Text>
+            {(currentWind?.windGust ?? 0) > 0 && (
+              <Text style={styles.windGust}>
+                ▲ Gusts {Math.round(currentWind?.windGust ?? 0)} mph
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
 
-      {/* Precipitation outlook */}
-      <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability || 0} percent chance next 2 hours. Easing to ${hourly[4]?.values.precipitationProbability || 0} percent by ${hourly[4] ? formatHour(hourly[4].startTime, 4) : 'unknown'}`}>
-        <Text style={styles.precipLabel}>Precipitation outlook</Text>
-        <Text style={styles.windHint}>Chance of rain or snow in your area</Text>
-        <Text style={styles.precipText}>
-          {hourly[0]?.values.precipitationProbability || 0}% chance next 2h.{' '}
-          Easing to {hourly[4]?.values.precipitationProbability || 0}% by{' '}
-          {hourly[4] ? formatHour(hourly[4].startTime, 4) : '--'}.
-        </Text>
+        {/* Precipitation outlook */}
+        <View style={styles.precipOutlook} accessible accessibilityRole="text" accessibilityLabel={`Precipitation outlook. ${hourly[0]?.values.precipitationProbability ?? 0} percent chance next 2 hours. Easing to ${hourly[4]?.values.precipitationProbability ?? 0} percent by ${hourly[4] ? formatHour(hourly[4].startTime, 4) : 'unknown'}`}>
+          <Text style={styles.precipLabel}>Precipitation Outlook</Text>
+          <Text style={styles.windHint}>Chance of rain or snow in your area</Text>
+          <Text style={styles.precipText}>
+            {hourly[0]?.values.precipitationProbability ?? 0}% chance next 2h.{' '}
+            Easing to {hourly[4]?.values.precipitationProbability ?? 0}% by{' '}
+            {hourly[4] ? formatHour(hourly[4].startTime, 4) : '--'}.
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -179,7 +186,8 @@ const styles = StyleSheet.create({
   tapeItem: {
     width: ITEM_WIDTH,
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 14,
+    paddingBottom: 4,
     borderRightWidth: 0.5,
     borderRightColor: theme.colors.faint,
   },
@@ -208,7 +216,15 @@ const styles = StyleSheet.create({
   },
   tapeCond: {
     fontSize: 18,
-    marginVertical: 6,
+    marginVertical: 4,
+  },
+  tapeCondLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    color: theme.colors.muted,
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    textAlign: 'center',
   },
   tapePrecip: {
     alignItems: 'center',
@@ -235,15 +251,48 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     letterSpacing: 0.5,
   },
+  detailsArea: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 40,
+  },
   windRibbon: {
     marginHorizontal: 28,
-    marginTop: 16,
     backgroundColor: theme.colors.faint,
     borderRadius: 2,
-    padding: 14,
+    padding: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  windMain: {
+    flex: 1,
+  },
+  windSide: {
     alignItems: 'center',
+    paddingLeft: 18,
+    borderLeftWidth: 0.5,
+    borderLeftColor: theme.colors.faint,
+    minWidth: 80,
+  },
+  windDirLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 4,
+  },
+  windDirBig: {
+    fontFamily: theme.fonts.serifBlack,
+    fontSize: 28,
+    color: theme.colors.ink,
+  },
+  windDirDeg: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: theme.colors.muted,
+    marginTop: 2,
   },
   windLabelSm: {
     fontFamily: theme.fonts.mono,
@@ -264,12 +313,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     color: theme.colors.muted,
   },
-  windDirText: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: theme.colors.muted,
-    marginTop: 3,
-  },
+
   windGust: {
     fontFamily: theme.fonts.mono,
     fontSize: 9,
@@ -285,9 +329,9 @@ const styles = StyleSheet.create({
   },
   precipOutlook: {
     marginHorizontal: 28,
-    marginTop: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    marginTop: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     borderLeftWidth: 2,
     borderLeftColor: theme.colors.accent2,
     backgroundColor: 'rgba(28,93,196,0.06)',
