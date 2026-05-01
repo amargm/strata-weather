@@ -9,7 +9,7 @@ interface ScienceScreenProps {
 }
 
 export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
-  const uvIndex = weather?.uvIndex || 0;
+  const uvIndex = weather?.uvIndex ?? 0;
   const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
 
   const formatTime = (iso: string | undefined) => {
@@ -58,36 +58,35 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
 
         {/* Pressure trend */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel || 0)} hectopascals, steady. Weight of air above you. Dropping means rain likely, rising means clearing`}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel ?? 0)} hectopascals. Weight of air above you. Below 1000 means storms likely, above 1020 means clear skies`}>
           <Text style={styles.label}>Pressure</Text>
-          <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel || 0)}</Text>
-          <Text style={styles.unit}>hPa · Steady</Text>
+          <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel ?? 0)}</Text>
+          <Text style={styles.unit}>hPa</Text>
           <Text style={styles.sub}>
-            Weight of air above you.{'\n'}Dropping = rain likely. Rising = clearing.
+            Weight of air above you.{'\n'}Below 1000 = storms likely. Above 1020 = clearing.
           </Text>
         </View>
 
         {/* Wet-bulb */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Wet-bulb temperature ${Math.round((weather?.dewPoint || 0) + 2)} degrees. Feels ${Math.round(weather?.temperatureApparent || 0)} degrees. ${(weather?.temperatureApparent || 0) < 18 ? 'comfortable' : 'sweat won\'t evaporate easily'}`}>
-          <Text style={styles.label}>Wet-bulb Temp</Text>
-          <Text style={styles.val}>{Math.round((weather?.dewPoint || 0) + 2)}°</Text>
-          <Text style={styles.unit}>°C</Text>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Feels like ${Math.round(weather?.temperatureApparent ?? 0)} degrees. Dew point ${Math.round(weather?.dewPoint ?? 0)} degrees. ${(weather?.dewPoint ?? 0) > 15 ? 'Muggy, sweat won\'t evaporate easily' : 'Comfortable moisture level'}`}>
+          <Text style={styles.label}>Feels Like</Text>
+          <Text style={styles.val}>{Math.round(weather?.temperatureApparent ?? 0)}°</Text>
+          <Text style={styles.unit}>Dew point {Math.round(weather?.dewPoint ?? 0)}°C</Text>
           <Text style={styles.sub}>
-            How well your body can cool down.{'\n'}
-            Feels {Math.round(weather?.temperatureApparent || 0)}° — 
-            {(weather?.temperatureApparent || 0) < 18 ? ' comfortable' : ' sweat won\'t evaporate easily'}
+            How temperature actually feels on skin.{'\n'}
+            {(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
           </Text>
         </View>
 
         {/* Humidity */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity || 0} percent. Moisture in the air. 70 percent plus feels muggy, 30 percent minus feels dry`}>
+        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity ?? 0} percent. Moisture in the air. Above 70 percent feels muggy, below 30 percent feels dry`}>
           <Text style={styles.label}>Humidity</Text>
           <Text style={[styles.val, { color: theme.colors.accent2 }]}>
-            {weather?.humidity || 0}
+            {weather?.humidity ?? 0}
           </Text>
           <Text style={styles.unit}>%</Text>
           <Text style={styles.sub}>
-            Moisture in the air.{'\n'}70%+ feels muggy. 30%- feels dry.
+            Moisture in the air.{'\n'}Above 70% feels muggy. Below 30% feels dry.
           </Text>
         </View>
       </View>

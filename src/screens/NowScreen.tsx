@@ -83,9 +83,9 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
 
       {/* Live strip */}
       <View style={styles.liveStrip} accessibilityRole="summary">
-        <View style={styles.liveItem} accessible accessibilityLabel={`Humidity ${weather?.humidity || 'unknown'} percent. Moisture in air`}>
+        <View style={styles.liveItem} accessible accessibilityLabel={`Humidity ${weather?.humidity ?? 'unknown'} percent. Moisture in air`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>{weather?.humidity || '--'}%</Text>
+            <Text style={styles.liveVal}>{weather?.humidity ?? '--'}%</Text>
             <Text style={styles.liveLabel}>Hum</Text>
             <View style={styles.liveDot} />
           </View>
@@ -98,12 +98,12 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Ground speed</Text>
         </View>
-        <View style={styles.liveItem} accessible accessibilityLabel={`UV index ${weather?.uvIndex || 'unknown'}. Sun burn risk`}>
+        <View style={styles.liveItem} accessible accessibilityLabel={`UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>UV {weather?.uvIndex || '--'}</Text>
+            <Text style={styles.liveVal}>UV {weather?.uvIndex ?? '--'}</Text>
             <Text style={styles.liveLabel}>Index</Text>
           </View>
-          <Text style={styles.liveHint}>Sun burn risk</Text>
+          <Text style={styles.liveHint}>Sun exposure</Text>
         </View>
       </View>
 
@@ -138,7 +138,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <View style={styles.nowFooter}>
         <Text style={styles.conditionLong}>
-          {expressiveDescription || `${condition.label} with ${weather?.cloudCover || 0}% cloud cover. Visibility ${weather?.visibility || '--'} km.`}
+          {expressiveDescription || `${condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${weather?.visibility ?? '--'} km.`}
         </Text>
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />

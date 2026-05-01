@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues } from '../types/weather';
-
-const { height: SCREEN_H } = Dimensions.get('window');
 
 interface AtmosphereScreenProps {
   weather: WeatherValues | null;
@@ -47,9 +45,8 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const uvIndex = weather?.uvIndex || 0;
+  const uvIndex = weather?.uvIndex ?? 0;
   const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
-  const pressureTrend = 'Steady';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -90,18 +87,18 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
         {/* Row 2 */}
         <MetricCell
           label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel || 0)}`}
-          unit={`hPa · ${pressureTrend}`}
-          hint="Weight of air above you. Dropping means storms likely."
+          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}`}
+          unit="hPa"
+          hint="Weight of air above you. Below 1000 hPa often means storms."
           barAnim={barAnims[2]}
           color={theme.colors.accent}
           isLeft
         />
         <MetricCell
           label="Dew Point"
-          value={`${Math.round(weather?.dewPoint || 0)}°`}
-          unit={`Wet-bulb ${Math.round((weather?.dewPoint || 0) + 2)}°C`}
-          hint="Temperature where fog forms. Sticky above 15°."
+          value={`${Math.round(weather?.dewPoint ?? 0)}°`}
+          unit="°C"
+          hint="Air must cool to this temp to form dew. Above 15° feels sticky."
           barAnim={barAnims[3]}
           color="rgba(240,235,225,0.4)"
           isLeft={false}
@@ -180,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.ink,
   },
   content: {
-    minHeight: SCREEN_H,
+    flexGrow: 1,
     paddingBottom: 40,
   },
   header: {
