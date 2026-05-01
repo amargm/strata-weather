@@ -9,15 +9,18 @@ import {
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { WeatherValues } from '../types/weather';
+import { WeatherEffects } from '../components/WeatherEffects';
 
 interface NowScreenProps {
   weather: WeatherValues | null;
   locationName: string;
   highTemp?: number;
   lowTemp?: number;
+  expressiveDescription?: string;
+  seasonalColors?: { blobColor1: string; blobColor2: string; accentTint: string };
 }
 
-export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScreenProps) {
+export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors }: NowScreenProps) {
   const tempAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -36,10 +39,20 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
 
   return (
     <View style={styles.container}>
-      {/* Ink wash blobs */}
+      {/* Weather effects overlay */}
+      {weather && (
+        <WeatherEffects
+          weatherCode={weather.weatherCode || 0}
+          cloudCover={weather.cloudCover || 0}
+        />
+      )}
+
+      {/* Ink wash blobs (seasonal) */}
       <View style={styles.inkWash}>
-        <View style={[styles.inkBlob, styles.blob1]} />
-        <View style={[styles.inkBlob, styles.blob2]} />
+        <View style={[styles.inkBlob, styles.blob1,
+          seasonalColors && { backgroundColor: seasonalColors.blobColor1 }]} />
+        <View style={[styles.inkBlob, styles.blob2,
+          seasonalColors && { backgroundColor: seasonalColors.blobColor2 }]} />
       </View>
 
       {/* Top bar */}
@@ -108,8 +121,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <View style={styles.nowFooter}>
         <Text style={styles.conditionLong}>
-          {condition.label} with {weather?.cloudCover || 0}% cloud cover.{' '}
-          Visibility {weather?.visibility || '--'} km.
+          {expressiveDescription || `${condition.label} with ${weather?.cloudCover || 0}% cloud cover. Visibility ${weather?.visibility || '--'} km.`}
         </Text>
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />
