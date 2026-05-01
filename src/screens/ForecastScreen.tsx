@@ -8,12 +8,14 @@ interface ForecastScreenProps {
   daily: DailyInterval[];
 }
 
-export function ForecastScreen({ daily }: ForecastScreenProps) {
+export const ForecastScreen = React.memo(function ForecastScreen({ daily }: ForecastScreenProps) {
   // Find temp range for bar normalization
-  const allTemps = daily.flatMap(d => [d.values.temperatureMax, d.values.temperatureMin]);
-  const minTemp = Math.min(...allTemps);
-  const maxTemp = Math.max(...allTemps);
-  const range = maxTemp - minTemp || 1;
+  const { minTemp, maxTemp, range } = React.useMemo(() => {
+    const allTemps = daily.flatMap(d => [d.values.temperatureMax, d.values.temperatureMin]);
+    const min = Math.min(...allTemps);
+    const max = Math.max(...allTemps);
+    return { minTemp: min, maxTemp: max, range: max - min || 1 };
+  }, [daily]);
 
   const formatDay = (iso: string, index: number) => {
     if (index === 0) return 'Today';
@@ -88,7 +90,7 @@ export function ForecastScreen({ daily }: ForecastScreenProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

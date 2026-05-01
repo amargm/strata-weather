@@ -34,6 +34,7 @@ import { ForecastScreen } from './src/screens/ForecastScreen';
 import { ScienceScreen } from './src/screens/ScienceScreen';
 import { theme } from './src/utils/theme';
 import { WEATHER_CODES } from './src/utils/constants';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -155,38 +156,48 @@ export default function App() {
       >
         {/* Layer 0: Now */}
         <View style={{ height: SCREEN_HEIGHT }}>
-          <NowScreen
-            weather={data?.current || null}
-            locationName={locationName}
-            highTemp={highTemp}
-            lowTemp={lowTemp}
-          />
+          <ErrorBoundary layerName="Now">
+            <NowScreen
+              weather={data?.current || null}
+              locationName={locationName}
+              highTemp={highTemp}
+              lowTemp={lowTemp}
+            />
+          </ErrorBoundary>
         </View>
 
         {/* Layer 1: Atmosphere */}
         <View style={{ height: SCREEN_HEIGHT }}>
-          <AtmosphereScreen weather={data?.current || null} />
+          <ErrorBoundary layerName="Atmosphere">
+            <AtmosphereScreen weather={data?.current || null} />
+          </ErrorBoundary>
         </View>
 
         {/* Layer 2: Hourly */}
         <View style={{ height: SCREEN_HEIGHT }}>
-          <HourlyScreen
-            hourly={data?.hourly || []}
-            currentWind={data?.current || null}
-          />
+          <ErrorBoundary layerName="Hourly">
+            <HourlyScreen
+              hourly={data?.hourly || []}
+              currentWind={data?.current || null}
+            />
+          </ErrorBoundary>
         </View>
 
         {/* Layer 3: 7-Day Forecast */}
         <View style={{ height: SCREEN_HEIGHT }}>
-          <ForecastScreen daily={data?.daily || []} />
+          <ErrorBoundary layerName="7-Day">
+            <ForecastScreen daily={data?.daily || []} />
+          </ErrorBoundary>
         </View>
 
         {/* Layer 4: Science */}
         <View style={{ height: SCREEN_HEIGHT }}>
-          <ScienceScreen
-            weather={data?.current || null}
-            today={data?.daily?.[0] || null}
-          />
+          <ErrorBoundary layerName="Deep Data">
+            <ScienceScreen
+              weather={data?.current || null}
+              today={data?.daily?.[0] || null}
+            />
+          </ErrorBoundary>
         </View>
       </Animated.ScrollView>
 

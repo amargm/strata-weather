@@ -17,7 +17,7 @@ interface HourlyScreenProps {
   currentWind: WeatherValues | null;
 }
 
-export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
+export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
   const scrollRef = useRef<ScrollView>(null);
 
   const formatHour = (iso: string, index: number) => {
@@ -123,7 +123,7 @@ export function HourlyScreen({ hourly, currentWind }: HourlyScreenProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

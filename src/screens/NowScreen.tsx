@@ -17,7 +17,7 @@ interface NowScreenProps {
   lowTemp?: number;
 }
 
-export function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScreenProps) {
+export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScreenProps) {
   const tempAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -118,7 +118,7 @@ export function NowScreen({ weather, locationName, highTemp, lowTemp }: NowScree
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

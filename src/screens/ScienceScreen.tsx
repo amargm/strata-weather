@@ -8,7 +8,7 @@ interface ScienceScreenProps {
   today: DailyInterval | null;
 }
 
-export function ScienceScreen({ weather, today }: ScienceScreenProps) {
+export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
   const uvIndex = weather?.uvIndex || 0;
   const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
 
@@ -114,7 +114,7 @@ export function ScienceScreen({ weather, today }: ScienceScreenProps) {
       </View>
     </ScrollView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

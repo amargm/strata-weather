@@ -7,7 +7,7 @@ interface AtmosphereScreenProps {
   weather: WeatherValues | null;
 }
 
-export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
+export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
   const barAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -120,7 +120,7 @@ export function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
       )}
     </View>
   );
-}
+});
 
 function MetricCell({
   label, value, unit, hint, barAnim, color,
