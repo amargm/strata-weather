@@ -9,6 +9,7 @@ import {
   NativeModules,
   Platform,
   Animated as RNAnimated,
+  Linking,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -76,7 +77,7 @@ function friendlyError(raw: string): { title: string; body: string } {
   return { title: 'Something went wrong', body: raw.length > 80 ? 'Could not load weather data. Please try again.' : raw };
 }
 
-export default function App() {
+export default function App(props: { initialLayer?: number }) {
   const [fontsLoaded] = useFonts({
     'PlayfairDisplay': PlayfairDisplay_400Regular,
     'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
@@ -139,25 +140,6 @@ export default function App() {
   const [currentLayer, setCurrentLayer] = useState(0);
   const prevLayerRef = useRef(0);
 
-  // Restore last viewed layer
-  useEffect(() => {
-    AsyncStorage.getItem(LAST_LAYER_KEY).then(val => {
-      const layer = parseInt(val || '0', 10);
-      if (layer > 0 && layer < LAYER_LABELS.length) {
-        setCurrentLayer(layer);
-        setTimeout(() => {
-          scrollRef.current?.scrollTo({ y: layer * SCREEN_HEIGHT, animated: false });
-        }, 100);
-      }
-    });
-  }, []);
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
   const onScrollEnd = useCallback((event: any) => {
     const page = Math.round(event.nativeEvent.contentOffset.y / SCREEN_HEIGHT);
     setCurrentLayer(page);
@@ -175,6 +157,49 @@ export default function App() {
     AsyncStorage.setItem(LAST_LAYER_KEY, String(index));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
+
+  // Restore last viewed layer (deep-link from widget takes priority)
+  useEffect(() => {
+    const deepLinkLayer = props.initialLayer;
+    if (deepLinkLayer != null && deepLinkLayer > 0 && deepLinkLayer < LAYER_LABELS.length) {
+      setCurrentLayer(deepLinkLayer);
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: deepLinkLayer * SCREEN_HEIGHT, animated: false });
+      }, 100);
+      return;
+    }
+    AsyncStorage.getItem(LAST_LAYER_KEY).then(val => {
+      const layer = parseInt(val || '0', 10);
+      if (layer > 0 && layer < LAYER_LABELS.length) {
+        setCurrentLayer(layer);
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({ y: layer * SCREEN_HEIGHT, animated: false });
+        }, 100);
+      }
+    });
+  }, []);
+
+  // Handle deep-links when app is already running (singleTask onNewIntent)
+  useEffect(() => {
+    const parseAndNavigate = (url: string | null) => {
+      if (!url) return;
+      const match = url.match(/strata:\/\/weather\/layer\/(\d+)/);
+      if (match) {
+        const layer = parseInt(match[1], 10);
+        if (layer >= 0 && layer < LAYER_LABELS.length) {
+          goToLayer(layer);
+        }
+      }
+    };
+    const sub = Linking.addEventListener('url', ({ url }) => parseAndNavigate(url));
+    return () => sub.remove();
+  }, [goToLayer]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   // --- Parallax animated styles for each layer ---
   const makeLayerStyle = (index: number) => {

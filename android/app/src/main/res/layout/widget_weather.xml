@@ -6,9 +6,11 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:background="@drawable/widget_bg">
+    android:background="@drawable/widget_bg"
+    android:clipChildren="true"
+    android:clipToPadding="true">
 
-    <!-- Top row: Location + Condition -->
+    <!-- Top row: Location + Condition icon -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -19,7 +21,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp">
 
             <TextView
                 android:id="@+id/widget_eyebrow"
@@ -33,59 +36,77 @@
 
             <TextView
                 android:id="@+id/widget_location"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Loading..."
                 android:textSize="13sp"
                 android:textColor="#0f0e0c"
                 android:textStyle="bold"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:singleLine="true" />
         </LinearLayout>
+
+        <!-- Condition icon (emoji) -->
+        <TextView
+            android:id="@+id/widget_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="22sp"
+            android:layout_marginEnd="6dp"
+            android:includeFontPadding="false" />
 
         <TextView
             android:id="@+id/widget_condition"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textColor="#c4411c"
-            android:textStyle="italic" />
+            android:textStyle="italic"
+            android:maxLines="1"
+            android:ellipsize="end" />
     </LinearLayout>
 
     <!-- Divider -->
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="6dp"
         android:background="#1A0f0e0c" />
 
-    <!-- Giant Temperature -->
+    <!-- Temperature row — uses weight to fill available space -->
     <LinearLayout
+        android:id="@+id/widget_temp_row"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal"
-        android:gravity="bottom">
+        android:gravity="center_vertical|bottom">
 
         <TextView
             android:id="@+id/widget_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="--"
-            android:textSize="52sp"
+            android:textSize="48sp"
             android:textColor="#0f0e0c"
             android:textStyle="bold"
-            android:includeFontPadding="false" />
+            android:includeFontPadding="false"
+            android:maxLines="1" />
 
         <TextView
             android:id="@+id/widget_temp_unit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="°C"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textColor="#8a8070"
             android:fontFamily="monospace"
-            android:layout_marginBottom="10dp" />
+            android:layout_marginBottom="8dp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -93,7 +114,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="end"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="8dp">
 
             <TextView
                 android:id="@+id/widget_feels"
@@ -135,8 +156,8 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
         android:background="#1A0f0e0c" />
 
     <!-- Stats row -->
@@ -147,6 +168,7 @@
 
         <!-- Humidity -->
         <LinearLayout
+            android:id="@+id/widget_humidity_cell"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -166,7 +188,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Humidity"
+                android:text="💧"
                 android:textSize="7sp"
                 android:textColor="#8a8070"
                 android:fontFamily="monospace"
@@ -175,6 +197,7 @@
 
         <!-- Wind -->
         <LinearLayout
+            android:id="@+id/widget_wind_cell"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -194,7 +217,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Wind"
+                android:text="💨"
                 android:textSize="7sp"
                 android:textColor="#8a8070"
                 android:fontFamily="monospace"
@@ -203,6 +226,7 @@
 
         <!-- UV -->
         <LinearLayout
+            android:id="@+id/widget_uv_cell"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -222,7 +246,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Index"
+                android:text="☀️"
                 android:textSize="7sp"
                 android:textColor="#8a8070"
                 android:fontFamily="monospace"
@@ -231,6 +255,7 @@
 
         <!-- Rain -->
         <LinearLayout
+            android:id="@+id/widget_precip_cell"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -250,7 +275,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Rain"
+                android:text="🌧"
                 android:textSize="7sp"
                 android:textColor="#8a8070"
                 android:fontFamily="monospace"
@@ -268,7 +293,7 @@
         android:textColor="#8a8070"
         android:fontFamily="monospace"
         android:gravity="end"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:letterSpacing="0.1" />
 
 </LinearLayout>
