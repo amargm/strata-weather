@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,8 @@ import {
   Text,
   ActivityIndicator,
   StatusBar,
+  NativeModules,
+  Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -31,6 +33,7 @@ import { HourlyScreen } from './src/screens/HourlyScreen';
 import { ForecastScreen } from './src/screens/ForecastScreen';
 import { ScienceScreen } from './src/screens/ScienceScreen';
 import { theme } from './src/utils/theme';
+import { WEATHER_CODES } from './src/utils/constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -48,6 +51,36 @@ export default function App() {
 
   const { coords, locationName, loading: locLoading } = useLocation();
   const { data, loading: weatherLoading, error, refresh } = useWeather(coords);
+
+  // Sync weather data to Android widget via SharedPreferences
+  useEffect(() => {
+    if (!data?.current || !coords || Platform.OS !== 'android') return;
+    try {
+      const w = data.current;
+      const code = w.weatherCode || 0;
+      const condition = WEATHER_CODES[code]?.label || 'Unknown';
+      const hiTemp = data.daily?.[0]?.values?.temperatureMax ?? w.temperature + 2;
+      const loTemp = data.daily?.[0]?.values?.temperatureMin ?? w.temperature - 2;
+
+      NativeModules.AppConfig?.saveWidgetData(
+        locationName || 'Unknown',
+        w.temperature || 0,
+        w.temperatureApparent || 0,
+        hiTemp,
+        loTemp,
+        w.humidity || 0,
+        w.windSpeed || 0,
+        w.uvIndex || 0,
+        w.precipitationProbability || 0,
+        code,
+        condition,
+        coords.latitude,
+        coords.longitude,
+      );
+    } catch (e) {
+      // Widget sync is non-critical
+    }
+  }, [data, locationName, coords]);
 
   const scrollY = useSharedValue(0);
   const scrollRef = useRef<Animated.ScrollView>(null);
