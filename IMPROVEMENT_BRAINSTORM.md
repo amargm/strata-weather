@@ -9,8 +9,8 @@
 
 ### Critical
 - **No onboarding** — Users land on "Reading the sky..." with zero context about the layered vertical navigation. No tutorial, no first-run guidance.
-- **Navigation is invisible** — 5 full-screen pages with tiny dots at the bottom. Users won't discover this is a paging interface.
-- **Status bar jarring** — Flips dark/light on every scroll. Should crossfade or commit to one approach.
+- ~~**Navigation is invisible** — 5 full-screen pages with tiny dots at the bottom. Users won't discover this is a paging interface.~~ ✅ *Fixed: Expanded nav with layer label, 01/05 counter, larger dots with dark-layer variants, first-launch swipe hint that auto-dismisses*
+- ~~**Status bar jarring** — Flips dark/light on every scroll. Should crossfade or commit to one approach.~~ ✅ *Fixed: Uses DARK_LAYERS set, animated prop for smooth transitions, only changes on settled layer state*
 
 ### Important
 - **Live strip overlaps on small screens** — Positioned absolutely at `right: 0, top: 40%` with no safe-area margins. Will cut off on small devices.

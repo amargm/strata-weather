@@ -48,6 +48,10 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LAYER_LABELS = ['Now', 'Atmosphere', 'Hourly', '7-Day', 'Deep Data'];
 const LAST_LAYER_KEY = 'strata_last_layer';
+const ONBOARDED_KEY = 'strata_onboarded';
+
+// Layers 1 (Atmosphere) and 4 (Science) have dark backgrounds
+const DARK_LAYERS = new Set([1, 4]);
 
 const LOADING_TIPS = [
   'Reading the sky...',
@@ -140,16 +144,53 @@ export default function App(props: { initialLayer?: number }) {
   const [currentLayer, setCurrentLayer] = useState(0);
   const prevLayerRef = useRef(0);
 
+  // --- Navigation label + onboarding ---
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const navLabelFade = useRef(new RNAnimated.Value(1)).current;
+  const swipeHintFade = useRef(new RNAnimated.Value(0)).current;
+
+  // Check if first launch → show swipe hint
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDED_KEY).then(val => {
+      if (!val) {
+        setShowSwipeHint(true);
+        RNAnimated.timing(swipeHintFade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+        // Auto-dismiss after 4 seconds
+        const timer = setTimeout(() => {
+          RNAnimated.timing(swipeHintFade, { toValue: 0, duration: 500, useNativeDriver: true }).start(() => {
+            setShowSwipeHint(false);
+          });
+          AsyncStorage.setItem(ONBOARDED_KEY, '1');
+        }, 4000);
+        return () => clearTimeout(timer);
+      }
+    });
+  }, []);
+
+  // Fade nav label on layer change
+  const animateNavLabel = useCallback(() => {
+    navLabelFade.setValue(0);
+    RNAnimated.timing(navLabelFade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+  }, [navLabelFade]);
+
   const onScrollEnd = useCallback((event: any) => {
     const page = Math.round(event.nativeEvent.contentOffset.y / SCREEN_HEIGHT);
     setCurrentLayer(page);
     AsyncStorage.setItem(LAST_LAYER_KEY, String(page));
-    // Haptic on layer change
+    // Haptic + label animation on layer change
     if (page !== prevLayerRef.current) {
       prevLayerRef.current = page;
       Haptics.selectionAsync();
+      animateNavLabel();
+      // Dismiss swipe hint on first scroll
+      if (showSwipeHint) {
+        RNAnimated.timing(swipeHintFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+          setShowSwipeHint(false);
+        });
+        AsyncStorage.setItem(ONBOARDED_KEY, '1');
+      }
     }
-  }, []);
+  }, [animateNavLabel, showSwipeHint, swipeHintFade]);
 
   const goToLayer = useCallback((index: number) => {
     scrollRef.current?.scrollTo({ y: index * SCREEN_HEIGHT, animated: true });
@@ -299,9 +340,10 @@ export default function App(props: { initialLayer?: number }) {
   return (
     <View style={styles.root}>
       <StatusBar
-        barStyle={currentLayer === 0 || currentLayer === 2 || currentLayer === 3 ? 'dark-content' : 'light-content'}
+        barStyle={DARK_LAYERS.has(currentLayer) ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent
+        animated
       />
 
       {/* Vertical paging scroll */}
@@ -375,22 +417,57 @@ export default function App(props: { initialLayer?: number }) {
         </View>
       </Animated.ScrollView>
 
-      {/* Dots navigation */}
-      <View style={styles.dotsNav}>
-        {LAYER_LABELS.map((label, i) => (
-          <TouchableOpacity
-            key={i}
-            onPress={() => goToLayer(i)}
-            hitSlop={{ top: 16, bottom: 16, left: 8, right: 8 }}
-            style={[
-              styles.dot,
-              currentLayer === i && styles.dotActive,
-            ]}
-            accessibilityLabel={`Go to ${label} layer`}
-            accessibilityRole="button"
-          />
-        ))}
+      {/* Navigation indicator */}
+      <View style={styles.navContainer}>
+        {/* Current layer label */}
+        <RNAnimated.Text
+          style={[
+            styles.navLabel,
+            { opacity: navLabelFade },
+            DARK_LAYERS.has(currentLayer) && styles.navLabelLight,
+          ]}
+        >
+          {LAYER_LABELS[currentLayer]}
+        </RNAnimated.Text>
+
+        {/* Dot indicators */}
+        <View style={styles.dotsRow}>
+          {LAYER_LABELS.map((label, i) => (
+            <TouchableOpacity
+              key={i}
+              onPress={() => goToLayer(i)}
+              hitSlop={{ top: 16, bottom: 16, left: 10, right: 10 }}
+              style={[
+                styles.dot,
+                currentLayer === i && styles.dotActive,
+                DARK_LAYERS.has(currentLayer) && styles.dotOnDark,
+                currentLayer === i && DARK_LAYERS.has(currentLayer) && styles.dotActiveOnDark,
+              ]}
+              accessibilityLabel={`Go to ${label} layer, ${i + 1} of ${LAYER_LABELS.length}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: currentLayer === i }}
+            />
+          ))}
+        </View>
+
+        {/* Layer counter */}
+        <Text
+          style={[
+            styles.navCounter,
+            DARK_LAYERS.has(currentLayer) && styles.navCounterLight,
+          ]}
+        >
+          {String(currentLayer + 1).padStart(2, '0')}/{String(LAYER_LABELS.length).padStart(2, '0')}
+        </Text>
       </View>
+
+      {/* First-launch swipe hint */}
+      {showSwipeHint && (
+        <RNAnimated.View style={[styles.swipeHint, { opacity: swipeHintFade }]}>
+          <Text style={styles.swipeHintArrow}>↕</Text>
+          <Text style={styles.swipeHintText}>Swipe up to explore layers</Text>
+        </RNAnimated.View>
+      )}
 
     </View>
   );
@@ -481,16 +558,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  navContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  navLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: theme.colors.muted,
+    marginBottom: 8,
+  },
+  navLabelLight: {
+    color: 'rgba(240,235,225,0.6)',
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
   dot: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 3,
     backgroundColor: theme.colors.muted,
+    opacity: 0.4,
   },
   dotActive: {
-    width: 20,
+    width: 22,
     borderRadius: 3,
     backgroundColor: theme.colors.accent,
+    opacity: 1,
+  },
+  dotOnDark: {
+    backgroundColor: 'rgba(240,235,225,0.35)',
+    opacity: 0.6,
+  },
+  dotActiveOnDark: {
+    backgroundColor: theme.colors.accent,
+    opacity: 1,
+  },
+  navCounter: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1,
+    color: 'rgba(15,14,12,0.2)',
+    marginTop: 6,
+  },
+  navCounterLight: {
+    color: 'rgba(240,235,225,0.25)',
+  },
+  swipeHint: {
+    position: 'absolute',
+    bottom: 90,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  swipeHintArrow: {
+    fontSize: 20,
+    color: theme.colors.accent,
+    marginBottom: 4,
+  },
+  swipeHintText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: theme.colors.muted,
+    letterSpacing: 0.5,
   },
 
 });
