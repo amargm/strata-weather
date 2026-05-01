@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES } from '../utils/constants';
@@ -186,6 +185,7 @@ const styles = StyleSheet.create({
   },
   tapeContent: {
     gap: 0,
+    paddingRight: 28,
   },
   tapeItem: {
     width: ITEM_WIDTH,

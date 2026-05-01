@@ -60,14 +60,14 @@ function normalizeDailyValues(raw: any): DailyValues {
 
 function normalizeHourly(items: any[]): TimelineInterval[] {
   return items.map(item => ({
-    startTime: item.startTime || new Date().toISOString(),
+    startTime: item.time || item.startTime || new Date().toISOString(),
     values: normalizeWeatherValues(item.values),
   }));
 }
 
 function normalizeDaily(items: any[]): DailyInterval[] {
   return items.map(item => ({
-    startTime: item.startTime || new Date().toISOString(),
+    startTime: item.time || item.startTime || new Date().toISOString(),
     values: normalizeDailyValues(item.values),
   }));
 }

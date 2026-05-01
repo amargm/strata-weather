@@ -400,7 +400,7 @@ export default function App(props: { initialLayer?: number }) {
         snapToAlignment="start"
       >
         {/* Layer 0: Now */}
-        <View style={{ height: SCREEN_HEIGHT }}>
+        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden' }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[0]]}>
             <ErrorBoundary layerName="Now">
               <NowScreen
@@ -416,7 +416,7 @@ export default function App(props: { initialLayer?: number }) {
         </View>
 
         {/* Layer 1: Atmosphere */}
-        <View style={{ height: SCREEN_HEIGHT }}>
+        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden' }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[1]]}>
             <ErrorBoundary layerName="Atmosphere">
               <AtmosphereScreen weather={data?.current || null} />
@@ -425,7 +425,7 @@ export default function App(props: { initialLayer?: number }) {
         </View>
 
         {/* Layer 2: Hourly */}
-        <View style={{ height: SCREEN_HEIGHT }}>
+        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden' }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[2]]}>
             <ErrorBoundary layerName="Hourly">
               <HourlyScreen
@@ -437,7 +437,7 @@ export default function App(props: { initialLayer?: number }) {
         </View>
 
         {/* Layer 3: 7-Day Forecast */}
-        <View style={{ height: SCREEN_HEIGHT }}>
+        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden' }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[3]]}>
             <ErrorBoundary layerName="7-Day">
               <ForecastScreen daily={data?.daily || []} />
@@ -446,7 +446,7 @@ export default function App(props: { initialLayer?: number }) {
         </View>
 
         {/* Layer 4: Science */}
-        <View style={{ height: SCREEN_HEIGHT }}>
+        <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden' }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[4]]}>
             <ErrorBoundary layerName="Deep Data">
               <ScienceScreen

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { DailyInterval } from '../types/weather';
@@ -29,7 +29,7 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
@@ -46,11 +46,11 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
 
       {/* Column hints */}
       <View style={styles.colHints}>
-        <Text style={[styles.colHint, { width: 76 }]}>Day</Text>
-        <Text style={[styles.colHint, { width: 32, textAlign: 'center' }]}></Text>
-        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: 8 }]}>Range</Text>
-        <Text style={[styles.colHint, { width: 65 }]}>Hi / Lo</Text>
-        <Text style={[styles.colHint, { width: 35, textAlign: 'right' }]}>Precip</Text>
+        <Text style={[styles.colHint, { width: 70 }]}>Day</Text>
+        <Text style={[styles.colHint, { width: 28, textAlign: 'center' }]}></Text>
+        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: 6 }]}>Range</Text>
+        <Text style={[styles.colHint, { width: 60 }]}>Hi / Lo</Text>
+        <Text style={[styles.colHint, { width: 32, textAlign: 'right' }]}>%</Text>
       </View>
 
       {/* Forecast rows */}
@@ -95,7 +95,7 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
           );
         })}
       </View>
-    </View>
+    </ScrollView>
   );
 });
 
@@ -103,6 +103,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.paperMid,
+  },
+  content: {
+    flexGrow: 1,
   },
   header: {
     flexDirection: 'row',
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
   colHints: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
@@ -168,10 +171,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
     paddingVertical: 13,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
   },
   dayCol: {
-    width: 76,
+    width: 70,
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
@@ -186,12 +189,12 @@ const styles = StyleSheet.create({
   },
   fcIcon: {
     fontSize: 20,
-    width: 32,
+    width: 28,
     textAlign: 'center',
   },
   barCell: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   barTrack: {
     height: 5,
@@ -211,7 +214,7 @@ const styles = StyleSheet.create({
   tempsCol: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    width: 65,
+    width: 60,
   },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,
@@ -228,7 +231,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     color: theme.colors.muted,
-    width: 35,
+    width: 32,
     textAlign: 'right',
   },
 });
