@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { DailyInterval } from '../types/weather';
-import { getStatusBarPadding, sw, ms } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
 interface ForecastScreenProps {
   daily: DailyInterval[];
@@ -18,6 +18,43 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
     return { minTemp: min, maxTemp: max, range: max - min || 1 };
   }, [daily]);
 
+  // Staggered entrance animations
+  const rowAnims = useRef(daily.map(() => new Animated.Value(0))).current;
+  const barAnims = useRef(daily.map(() => new Animated.Value(0))).current;
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!daily.length) return;
+    if (reduceMotion) {
+      rowAnims.forEach(a => a.setValue(1));
+      barAnims.forEach(a => a.setValue(1));
+      return;
+    }
+    // Reset
+    rowAnims.forEach(a => a.setValue(0));
+    barAnims.forEach(a => a.setValue(0));
+    // Stagger rows flowing in
+    Animated.stagger(70,
+      rowAnims.map(anim =>
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 90 })
+      )
+    ).start();
+    // Bars animate after rows settle
+    setTimeout(() => {
+      Animated.stagger(60,
+        barAnims.map(anim =>
+          Animated.spring(anim, { toValue: 1, useNativeDriver: false, damping: 16, stiffness: 80 })
+        )
+      ).start();
+    }, 200);
+  }, [daily, reduceMotion]);
+
   const formatDay = (iso: string, index: number) => {
     if (index === 0) return 'Today';
     const d = new Date(iso);
@@ -30,7 +67,7 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
@@ -45,58 +82,77 @@ export const ForecastScreen = React.memo(function ForecastScreen({ daily }: Fore
         </View>
       </View>
 
-      {/* Column hints */}
-      <View style={styles.colHints}>
-        <Text style={[styles.colHint, { width: sw(70) }]}>Day</Text>
-        <Text style={[styles.colHint, { width: sw(28), textAlign: 'center' }]}></Text>
-        <Text style={[styles.colHint, { flex: 1, paddingHorizontal: sw(6) }]}>Range</Text>
-        <Text style={[styles.colHint, { width: sw(60) }]}>Hi / Lo</Text>
-        <Text style={[styles.colHint, { width: sw(32), textAlign: 'right' }]}>%</Text>
-      </View>
-
-      {/* Forecast rows */}
+      {/* Forecast rows — spread vertically */}
       <View style={styles.table} accessibilityRole="list">
         {daily.map((day, index) => {
           const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[1000];
           const barLeft = ((day.values.temperatureMin - minTemp) / range) * 100;
           const barWidth = ((day.values.temperatureMax - day.values.temperatureMin) / range) * 100;
 
+          const rowOpacity = rowAnims[index] || new Animated.Value(1);
+          const rowTranslateY = rowOpacity.interpolate({
+            inputRange: [0, 1],
+            outputRange: [40, 0],
+          });
+          const barAnimWidth = (barAnims[index] || new Animated.Value(1)).interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', `${barWidth}%`],
+          });
+
           return (
-            <TouchableOpacity
+            <Animated.View
               key={day.startTime}
-              style={styles.row}
-              activeOpacity={0.7}
+              style={[
+                styles.row,
+                {
+                  opacity: rowOpacity,
+                  transform: [{ translateY: rowTranslateY }],
+                },
+              ]}
               accessible
-              accessibilityRole="button"
+              accessibilityRole="text"
               accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)} degrees, Low ${Math.round(day.values.temperatureMin)} degrees. ${day.values.precipitationProbability} percent precipitation`}
             >
-              <View style={styles.dayCol}>
+              {/* Left: Day + icon */}
+              <View style={styles.daySection}>
                 <Text style={styles.fcDay}>{formatDay(day.startTime, index)}</Text>
                 <Text style={styles.fcDaySm}>{formatDate(day.startTime)}</Text>
               </View>
+
               <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
-              <View style={styles.barCell} importantForAccessibility="no">
+
+              {/* Center: Temp bar */}
+              <View style={styles.barSection} importantForAccessibility="no">
                 <View style={styles.barTrack}>
-                  <View
+                  <Animated.View
                     style={[
                       styles.barFill,
-                      { left: `${barLeft}%`, width: `${barWidth}%` },
+                      {
+                        left: `${barLeft}%`,
+                        width: barAnimWidth as any,
+                      },
                     ]}
                   />
                 </View>
               </View>
-              <View style={styles.tempsCol}>
-                <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
-                <Text style={styles.fcLo}> {Math.round(day.values.temperatureMin)}°</Text>
+
+              {/* Right: Temps + precip */}
+              <View style={styles.rightSection}>
+                <View style={styles.tempsRow}>
+                  <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
+                  <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
+                </View>
+                {day.values.precipitationProbability > 0 && (
+                  <Text style={styles.fcPrecip}>
+                    💧 {day.values.precipitationProbability}%
+                  </Text>
+                )}
               </View>
-              <Text style={styles.fcPrecip}>
-                {day.values.precipitationProbability}%
-              </Text>
-            </TouchableOpacity>
+            </Animated.View>
           );
         })}
       </View>
-    </ScrollView>
+    </View>
   );
 });
 
@@ -105,24 +161,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.paperMid,
   },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 24,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.faint,
+    paddingBottom: sh(16),
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 28,
+    fontSize: ms(28),
     color: theme.colors.ink,
   },
   eyebrow: {
@@ -150,34 +199,20 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: theme.colors.muted,
   },
-  colHints: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: sw(14),
-    paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: theme.colors.faint,
-  },
-  colHint: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: theme.colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
   table: {
-    paddingTop: 8,
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: sw(20),
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: sh(12),
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
-    paddingVertical: 13,
-    paddingHorizontal: sw(14),
   },
-  dayCol: {
-    width: sw(70),
+  daySection: {
+    width: sw(72),
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
@@ -189,18 +224,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1,
     color: theme.colors.muted,
+    marginTop: 2,
   },
   fcIcon: {
-    fontSize: 20,
-    width: sw(28),
+    fontSize: 22,
+    width: sw(32),
     textAlign: 'center',
   },
-  barCell: {
+  barSection: {
     flex: 1,
-    paddingHorizontal: sw(6),
+    paddingHorizontal: sw(10),
   },
   barTrack: {
-    height: 5,
+    height: 6,
     borderRadius: 3,
     backgroundColor: theme.colors.faint,
     position: 'relative',
@@ -211,30 +247,31 @@ const styles = StyleSheet.create({
     top: 0,
     height: '100%',
     borderRadius: 3,
-    // Gradient approximation — use LinearGradient in production
     backgroundColor: theme.colors.accent,
   },
-  tempsCol: {
+  rightSection: {
+    alignItems: 'flex-end',
+    minWidth: sw(60),
+  },
+  tempsRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    width: sw(60),
+    gap: 6,
   },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(16),
+    fontSize: ms(17),
     color: theme.colors.accent,
   },
   fcLo: {
     fontFamily: theme.fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: theme.colors.accent2,
-    marginLeft: 4,
   },
   fcPrecip: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    color: theme.colors.muted,
-    width: sw(32),
-    textAlign: 'right',
+    color: theme.colors.accent2,
+    marginTop: 2,
   },
 });

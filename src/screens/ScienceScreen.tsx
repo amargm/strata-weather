@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
-import { getStatusBarPadding, sw, ms } from '../utils/responsive';
+import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
 interface ScienceScreenProps {
   weather: WeatherValues | null;
@@ -33,8 +33,75 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
     daylightStr = `${hours}h ${mins}m`;
   }
 
+  // Staggered entrance animations
+  const blockAnims = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
+  const sunAnim = useRef(new Animated.Value(0)).current;
+  const uvBarAnim = useRef(new Animated.Value(0)).current;
+  const [reduceMotion, setReduceMotion] = React.useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!weather) return;
+    if (reduceMotion) {
+      blockAnims.forEach(a => a.setValue(1));
+      sunAnim.setValue(1);
+      uvBarAnim.setValue(1);
+      return;
+    }
+    // Reset
+    blockAnims.forEach(a => a.setValue(0));
+    sunAnim.setValue(0);
+    uvBarAnim.setValue(0);
+    // Stagger blocks flowing in from below
+    Animated.stagger(100,
+      blockAnims.map(anim =>
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 80 })
+      )
+    ).start();
+    // Sun strip flows in after blocks
+    Animated.spring(sunAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      damping: 20,
+      stiffness: 70,
+      delay: 450,
+    }).start();
+    // UV bar animates smoothly
+    Animated.timing(uvBarAnim, {
+      toValue: Math.min(uvIndex / 11, 1),
+      duration: 800,
+      delay: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [weather, reduceMotion]);
+
+  const makeBlockStyle = (index: number) => ({
+    opacity: blockAnims[index],
+    transform: [{
+      translateY: blockAnims[index].interpolate({
+        inputRange: [0, 1],
+        outputRange: [50, 0],
+      }),
+    }],
+  });
+
+  const uvMarkerLeft = uvBarAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
@@ -43,76 +110,98 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
       </View>
 
-      {/* Science grid */}
-      <View style={styles.grid}>
-        {/* UV */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`UV Index ${uvIndex}, ${uvLabel}. How strong the sun is right now. 6 plus means sunburn in under 20 minutes`}>
-          <Text style={styles.label}>UV Index</Text>
-          <Text style={[styles.val, { color: theme.colors.accent }]}>{uvIndex}</Text>
-          <Text style={styles.unit}>{uvLabel}</Text>
-          <View style={styles.uvBar} importantForAccessibility="no">
-            <View style={[styles.uvMarker, { left: `${Math.min(uvIndex / 11, 1) * 100}%` }]} />
-          </View>
-          <Text style={styles.sub}>
-            How strong the sun is right now.{'\n'}6+ means sunburn in under 20 min.
-          </Text>
+      {/* Science grid — 2x2, centered vertically */}
+      <View style={styles.gridArea}>
+        <View style={styles.gridRow}>
+          {/* UV */}
+          <Animated.View style={[styles.block, makeBlockStyle(0)]} accessible accessibilityRole="text" accessibilityLabel={`UV Index ${uvIndex}, ${uvLabel}. How strong the sun is right now. 6 plus means sunburn in under 20 minutes`}>
+            <Text style={styles.label}>UV Index</Text>
+            <Text style={[styles.val, { color: theme.colors.accent }]}>{uvIndex}</Text>
+            <Text style={styles.unit}>{uvLabel}</Text>
+            <View style={styles.uvBar} importantForAccessibility="no">
+              <Animated.View style={[styles.uvMarker, { left: uvMarkerLeft, marginLeft: -5.5 }]} />
+            </View>
+            <Text style={styles.sub}>
+              How strong the sun is right now.{'\n'}6+ means sunburn in under 20 min.
+            </Text>
+          </Animated.View>
+
+          {/* Pressure */}
+          <Animated.View style={[styles.block, makeBlockStyle(1)]} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel ?? 0)} hectopascals. Weight of air above you. Below 1000 means storms likely, above 1020 means clear skies`}>
+            <Text style={styles.label}>Pressure</Text>
+            <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel ?? 0)}</Text>
+            <Text style={styles.unit}>hPa</Text>
+            <Text style={styles.sub}>
+              Weight of air above you.{'\n'}Below 1000 = storms likely.{'\n'}Above 1020 = clearing.
+            </Text>
+          </Animated.View>
         </View>
 
-        {/* Pressure trend */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Pressure ${Math.round(weather?.pressureSurfaceLevel ?? 0)} hectopascals. Weight of air above you. Below 1000 means storms likely, above 1020 means clear skies`}>
-          <Text style={styles.label}>Pressure</Text>
-          <Text style={styles.val}>{Math.round(weather?.pressureSurfaceLevel ?? 0)}</Text>
-          <Text style={styles.unit}>hPa</Text>
-          <Text style={styles.sub}>
-            Weight of air above you.{'\n'}Below 1000 = storms likely. Above 1020 = clearing.
-          </Text>
-        </View>
+        <View style={styles.gridRow}>
+          {/* Feels Like */}
+          <Animated.View style={[styles.block, makeBlockStyle(2)]} accessible accessibilityRole="text" accessibilityLabel={`Feels like ${Math.round(weather?.temperatureApparent ?? 0)} degrees. Dew point ${Math.round(weather?.dewPoint ?? 0)} degrees. ${(weather?.dewPoint ?? 0) > 15 ? 'Muggy, sweat won\'t evaporate easily' : 'Comfortable moisture level'}`}>
+            <Text style={styles.label}>Feels Like</Text>
+            <Text style={styles.val}>{Math.round(weather?.temperatureApparent ?? 0)}°</Text>
+            <Text style={styles.unit}>Dew point {Math.round(weather?.dewPoint ?? 0)}°C</Text>
+            <Text style={styles.sub}>
+              How temperature actually feels.{'\n'}
+              {(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate.' : 'Comfortable moisture level.'}
+            </Text>
+          </Animated.View>
 
-        {/* Wet-bulb */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Feels like ${Math.round(weather?.temperatureApparent ?? 0)} degrees. Dew point ${Math.round(weather?.dewPoint ?? 0)} degrees. ${(weather?.dewPoint ?? 0) > 15 ? 'Muggy, sweat won\'t evaporate easily' : 'Comfortable moisture level'}`}>
-          <Text style={styles.label}>Feels Like</Text>
-          <Text style={styles.val}>{Math.round(weather?.temperatureApparent ?? 0)}°</Text>
-          <Text style={styles.unit}>Dew point {Math.round(weather?.dewPoint ?? 0)}°C</Text>
-          <Text style={styles.sub}>
-            How temperature actually feels on skin.{'\n'}
-            {(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
-          </Text>
-        </View>
-
-        {/* Humidity */}
-        <View style={styles.block} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity ?? 0} percent. Moisture in the air. Above 70 percent feels muggy, below 30 percent feels dry`}>
-          <Text style={styles.label}>Humidity</Text>
-          <Text style={[styles.val, { color: theme.colors.accent2 }]}>
-            {weather?.humidity ?? 0}
-          </Text>
-          <Text style={styles.unit}>%</Text>
-          <Text style={styles.sub}>
-            Moisture in the air.{'\n'}Above 70% feels muggy. Below 30% feels dry.
-          </Text>
+          {/* Humidity */}
+          <Animated.View style={[styles.block, makeBlockStyle(3)]} accessible accessibilityRole="text" accessibilityLabel={`Humidity ${weather?.humidity ?? 0} percent. Moisture in the air. Above 70 percent feels muggy, below 30 percent feels dry`}>
+            <Text style={styles.label}>Humidity</Text>
+            <Text style={[styles.val, { color: theme.colors.accent2 }]}>
+              {weather?.humidity ?? 0}
+            </Text>
+            <Text style={styles.unit}>%</Text>
+            <Text style={styles.sub}>
+              Moisture in the air.{'\n'}Above 70% feels muggy.{'\n'}Below 30% feels dry.
+            </Text>
+          </Animated.View>
         </View>
       </View>
 
       {/* Sun strip */}
-      <View style={styles.sunStrip} accessible accessibilityRole="text" accessibilityLabel={`Sunrise at ${sunrise}. Sunset at ${sunset}. Total daylight ${daylightStr}`}>
+      <Animated.View
+        style={[
+          styles.sunStrip,
+          {
+            opacity: sunAnim,
+            transform: [{
+              translateY: sunAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [30, 0],
+              }),
+            }],
+          },
+        ]}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`Sunrise at ${sunrise}. Sunset at ${sunset}. Total daylight ${daylightStr}`}
+      >
         <View style={styles.sunCol}>
+          <Text style={styles.sunIcon}>☀</Text>
           <Text style={styles.sunLabel}>Sunrise</Text>
           <Text style={styles.sunVal}>{sunrise}</Text>
-          <Text style={styles.sunHint}>First light</Text>
         </View>
+        <View style={styles.sunDivider} />
         <View style={styles.sunCol}>
+          <Text style={styles.sunIcon}>🌙</Text>
           <Text style={styles.sunLabel}>Sunset</Text>
           <Text style={styles.sunVal}>{sunset}</Text>
-          <Text style={styles.sunHint}>Last light</Text>
         </View>
+        <View style={styles.sunDivider} />
         <View style={styles.sunCol}>
+          <Text style={styles.sunIcon}>◐</Text>
           <Text style={styles.sunLabel}>Daylight</Text>
-          <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)', fontSize: 15 }]}>
+          <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)' }]}>
             {daylightStr}
           </Text>
-          <Text style={styles.sunHint}>Total sun hours</Text>
         </View>
-      </View>
-    </ScrollView>
+      </Animated.View>
+    </View>
   );
 });
 
@@ -121,17 +210,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.ink,
   },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 24,
-  },
   header: {
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(240,235,225,0.1)',
+    paddingBottom: sh(12),
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
@@ -143,20 +225,26 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: theme.fonts.serifItalic,
-    fontSize: 28,
+    fontSize: ms(28),
     color: theme.colors.paper,
   },
-  grid: {
+  gridArea: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: sw(20),
+  },
+  gridRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    marginBottom: sh(8),
   },
   block: {
-    width: '50%',
-    padding: sw(16),
-    borderRightWidth: 0.5,
-    borderRightColor: 'rgba(240,235,225,0.08)',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(240,235,225,0.08)',
+    flex: 1,
+    margin: sw(6),
+    padding: sw(18),
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(240,235,225,0.08)',
+    backgroundColor: 'rgba(240,235,225,0.03)',
   },
   label: {
     fontFamily: theme.fonts.mono,
@@ -168,9 +256,9 @@ const styles = StyleSheet.create({
   },
   val: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(28),
+    fontSize: ms(30),
     color: theme.colors.paper,
-    lineHeight: ms(30),
+    lineHeight: ms(32),
   },
   unit: {
     fontFamily: theme.fonts.mono,
@@ -181,14 +269,14 @@ const styles = StyleSheet.create({
   sub: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
-    color: 'rgba(240,235,225,0.55)',
-    marginTop: 6,
-    lineHeight: 14,
+    color: 'rgba(240,235,225,0.45)',
+    marginTop: 8,
+    lineHeight: 15,
   },
   uvBar: {
     height: 3,
     borderRadius: 2,
-    marginTop: 10,
+    marginTop: 12,
     position: 'relative',
     overflow: 'visible',
     backgroundColor: 'rgba(240,235,225,0.08)',
@@ -200,23 +288,35 @@ const styles = StyleSheet.create({
     height: 11,
     borderRadius: 6,
     backgroundColor: theme.colors.paper,
-    marginLeft: -5.5,
   },
   sunStrip: {
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(240,235,225,0.1)',
     flexDirection: 'row',
-    paddingVertical: 16,
-    paddingHorizontal: sw(28),
-    justifyContent: 'space-between',
-    marginTop: 20,
+    alignItems: 'center',
+    marginHorizontal: sw(26),
+    marginBottom: sh(40),
+    paddingVertical: sh(16),
+    paddingHorizontal: sw(16),
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(240,235,225,0.08)',
+    backgroundColor: 'rgba(240,235,225,0.03)',
   },
   sunCol: {
+    flex: 1,
     alignItems: 'center',
+  },
+  sunDivider: {
+    width: 0.5,
+    height: 36,
+    backgroundColor: 'rgba(240,235,225,0.12)',
+  },
+  sunIcon: {
+    fontSize: 16,
+    marginBottom: 4,
   },
   sunLabel: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
+    fontSize: 9,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.55)',
@@ -224,13 +324,7 @@ const styles = StyleSheet.create({
   },
   sunVal: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 18,
+    fontSize: ms(16),
     color: theme.colors.paper,
-  },
-  sunHint: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.55)',
-    marginTop: 3,
   },
 });
