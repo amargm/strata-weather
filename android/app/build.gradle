@@ -24,6 +24,10 @@ android {
         buildConfigField "String", "WEATHER_API_KEY", "\"${System.getenv('WEATHER_API_KEY') ?: ''}\""
     }
 
+    sourceSets {
+        main.java.srcDirs += new File(generatedFilesSrcDir)
+    }
+
     signingConfigs {
         release {
             if (project.hasProperty('RELEASE_STORE_FILE')) {
@@ -59,6 +63,12 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Expo modules
+    addExpoModulesDependencies(dependencies, project)
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+
+// Generate the Expo modules package list
+generateExpoModulesPackageList()

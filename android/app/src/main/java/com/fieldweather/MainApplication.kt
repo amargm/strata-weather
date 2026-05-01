@@ -10,6 +10,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.soloader.SoLoader
+import expo.modules.ExpoModulesPackage
 
 class MainApplication : Application(), ReactApplication {
     override val reactNativeHost: ReactNativeHost =
@@ -17,6 +18,7 @@ class MainApplication : Application(), ReactApplication {
             override fun getPackages(): List<ReactPackage> =
                 PackageList(this).packages.apply {
                     // Add manually linked packages here
+                    add(ExpoModulesPackage())
                 }
 
             override fun getJSMainModuleName(): String = "index"
