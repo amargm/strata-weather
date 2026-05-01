@@ -335,8 +335,15 @@ export default function App(props: { initialLayer?: number }) {
     refresh();
   }, [refresh]);
 
-  // --- Skeleton loading screen ---
-  if (!fontsLoaded) return null;
+  // --- Show splash while fonts load ---
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
+        <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
+      </View>
+    );
+  }
 
   if ((locLoading || weatherLoading) && !data && !showSplash) {
     return (
