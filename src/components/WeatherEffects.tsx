@@ -524,36 +524,36 @@ function CloudEffect({ cover }: { cover: number }) {
   const intensity = Math.min(cover / 100, 1);
 
   const highClouds = useRef(
-    Array.from({ length: 3 }, (_, i) => ({
+    Array.from({ length: 2 }, (_, i) => ({
       anim: new Animated.Value(Math.random()),
-      top: 30 + i * 50 + Math.random() * 40,
-      duration: 45000 + Math.random() * 20000,
-      width: 160 + Math.random() * 100,
+      top: 40 + i * 70 + Math.random() * 50,
+      duration: 55000 + Math.random() * 25000,
+      width: 180 + Math.random() * 100,
       height: 12 + Math.random() * 10,
-      opacity: 0.015 + intensity * 0.02,
+      opacity: 0.012 + intensity * 0.018,
     }))
   ).current;
 
   const midClouds = useRef(
-    Array.from({ length: 3 + Math.round(intensity * 2) }, (_, i) => ({
+    Array.from({ length: 2 + Math.round(intensity) }, (_, i) => ({
       anim: new Animated.Value(Math.random()),
-      top: 120 + i * (H * 0.1) + Math.random() * 60,
-      duration: 28000 + Math.random() * 18000,
-      width: 120 + Math.random() * 80,
-      height: 30 + Math.random() * 20,
-      opacity: 0.025 + intensity * 0.035,
+      top: 140 + i * (H * 0.12) + Math.random() * 60,
+      duration: 35000 + Math.random() * 20000,
+      width: 130 + Math.random() * 80,
+      height: 28 + Math.random() * 18,
+      opacity: 0.02 + intensity * 0.025,
     }))
   ).current;
 
-  const lowCount = intensity > 0.7 ? 3 : intensity > 0.4 ? 2 : 1;
+  const lowCount = intensity > 0.7 ? 2 : 1;
   const lowClouds = useRef(
     Array.from({ length: lowCount }, (_, i) => ({
       anim: new Animated.Value(Math.random()),
-      top: H * 0.5 + i * 80 + Math.random() * 60,
-      duration: 55000 + Math.random() * 25000,
+      top: H * 0.5 + i * 100 + Math.random() * 60,
+      duration: 60000 + Math.random() * 30000,
       width: 200 + Math.random() * 120,
-      height: 40 + Math.random() * 30,
-      opacity: 0.03 + intensity * 0.04,
+      height: 36 + Math.random() * 24,
+      opacity: 0.025 + intensity * 0.03,
     }))
   ).current;
 
@@ -577,6 +577,12 @@ function CloudEffect({ cover }: { cover: number }) {
     }
   }, []);
 
+  // Fade in over first 12%, hold, fade out over last 12%
+  const edgeFade = (anim: Animated.Value) => anim.interpolate({
+    inputRange: [0, 0.12, 0.88, 1],
+    outputRange: [0, 1, 1, 0],
+  });
+
   return (
     <View style={styles.overlay} pointerEvents="none">
       {intensity > 0.6 && (
@@ -593,6 +599,7 @@ function CloudEffect({ cover }: { cover: number }) {
         <Animated.View key={`h${i}`} style={{
           position: 'absolute', top: c.top, width: c.width, height: c.height,
           borderRadius: c.height, backgroundColor: `rgba(15,14,12,${c.opacity})`,
+          opacity: edgeFade(c.anim),
           transform: [{ translateX: c.anim.interpolate({ inputRange: [0, 1], outputRange: [W + 20, -c.width - 20] }) }],
         }} />
       ))}
@@ -601,6 +608,7 @@ function CloudEffect({ cover }: { cover: number }) {
         <Animated.View key={`m${i}`} style={{
           position: 'absolute', top: c.top, width: c.width, height: c.height,
           borderRadius: c.height * 0.8, backgroundColor: `rgba(15,14,12,${c.opacity})`,
+          opacity: edgeFade(c.anim),
           transform: [{ translateX: c.anim.interpolate({ inputRange: [0, 1], outputRange: [-c.width - 30, W + 30] }) }],
         }} />
       ))}
@@ -609,6 +617,7 @@ function CloudEffect({ cover }: { cover: number }) {
         <Animated.View key={`l${i}`} style={{
           position: 'absolute', top: c.top, width: c.width, height: c.height,
           borderRadius: c.height, backgroundColor: `rgba(15,14,12,${c.opacity})`,
+          opacity: edgeFade(c.anim),
           transform: [{ translateX: c.anim.interpolate({ inputRange: [0, 1], outputRange: [W + 40, -c.width - 40] }) }],
         }} />
       ))}
@@ -684,6 +693,10 @@ function FogEffect({ dense }: { dense: boolean }) {
         <Animated.View key={`fb${i}`} style={{
           position: 'absolute', top: b.top, width: W * 1.6, height: b.height,
           borderRadius: b.height, backgroundColor: `rgba(200,195,185,${b.opacity})`,
+          opacity: b.anim.interpolate({
+            inputRange: [0, 0.15, 0.5, 0.85, 1],
+            outputRange: [0, 0.7, 1, 0.7, 0],
+          }),
           transform: [{ translateX: b.anim.interpolate({
             inputRange: [0, 0.5, 1],
             outputRange: [b.direction > 0 ? -W * 0.6 : W * 0.3, b.direction > 0 ? W * 0.3 : -W * 0.6, b.direction > 0 ? -W * 0.6 : W * 0.3],
@@ -782,6 +795,7 @@ function ThunderstormEffect() {
         <Animated.View key={`sh${i}`} style={{
           position: 'absolute', top: s.top, width: W * 0.6, height: 30, borderRadius: 15,
           backgroundColor: 'rgba(28,93,196,0.03)',
+          opacity: s.anim.interpolate({ inputRange: [0, 0.1, 0.9, 1], outputRange: [0, 1, 1, 0] }),
           transform: [{ translateX: s.anim.interpolate({ inputRange: [0, 1], outputRange: [-W * 0.3, W + 20] }) }],
         }} />
       ))}
