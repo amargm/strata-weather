@@ -39,6 +39,20 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
 
+  // Breathing ink wash blobs
+  const blob1Anim = useRef(new Animated.Value(0)).current;
+  const blob2Anim = useRef(new Animated.Value(0)).current;
+  const blob1Drift = useRef(new Animated.Value(0)).current;
+  const blob2Drift = useRef(new Animated.Value(0)).current;
+
+  // Live strip stagger entrance
+  const liveItem1 = useRef(new Animated.Value(0)).current;
+  const liveItem2 = useRef(new Animated.Value(0)).current;
+  const liveItem3 = useRef(new Animated.Value(0)).current;
+
+  // Footer entrance
+  const footerFade = useRef(new Animated.Value(0)).current;
+
   // Refresh animation state
   const [refreshing, setRefreshing] = useState(false);
   const rippleScale = useRef(new Animated.Value(0)).current;
@@ -50,12 +64,59 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
     if (reduceMotion) {
       fadeAnim.setValue(1);
       slideAnim.setValue(0);
+      liveItem1.setValue(1);
+      liveItem2.setValue(1);
+      liveItem3.setValue(1);
+      footerFade.setValue(1);
       return;
     }
+
+    // Main content entrance
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, damping: 15 }),
     ]).start();
+
+    // Staggered live strip items
+    Animated.stagger(200, [
+      Animated.spring(liveItem1, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 100 }),
+      Animated.spring(liveItem2, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 100 }),
+      Animated.spring(liveItem3, { toValue: 1, useNativeDriver: true, damping: 14, stiffness: 100 }),
+    ]).start();
+
+    // Footer delay entrance
+    Animated.sequence([
+      Animated.delay(600),
+      Animated.timing(footerFade, { toValue: 1, duration: 800, useNativeDriver: true }),
+    ]).start();
+
+    // Blob breathing — slow, organic scale pulsing
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blob1Anim, { toValue: 1, duration: 6000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(blob1Anim, { toValue: 0, duration: 6000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blob2Anim, { toValue: 1, duration: 8000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(blob2Anim, { toValue: 0, duration: 8000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+
+    // Blob lazy drift
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blob1Drift, { toValue: 1, duration: 12000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(blob1Drift, { toValue: 0, duration: 12000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(blob2Drift, { toValue: 1, duration: 15000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(blob2Drift, { toValue: 0, duration: 15000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
   }, [reduceMotion]);
 
   const handleRefresh = useCallback(() => {
@@ -154,12 +215,30 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         />
       )}
 
-      {/* Ink wash blobs (seasonal) */}
+      {/* Ink wash blobs (seasonal, animated) */}
       <View style={styles.inkWash}>
-        <View style={[styles.inkBlob, styles.blob1,
-          seasonalColors && { backgroundColor: seasonalColors.blobColor1 }]} />
-        <View style={[styles.inkBlob, styles.blob2,
-          seasonalColors && { backgroundColor: seasonalColors.blobColor2 }]} />
+        <Animated.View style={[styles.inkBlob, styles.blob1,
+          seasonalColors && { backgroundColor: seasonalColors.blobColor1 },
+          {
+            opacity: blob1Anim.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.16] }),
+            transform: [
+              { scale: blob1Anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] }) },
+              { translateX: blob1Drift.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) },
+              { translateY: blob1Drift.interpolate({ inputRange: [0, 1], outputRange: [0, 10] }) },
+            ],
+          },
+        ]} />
+        <Animated.View style={[styles.inkBlob, styles.blob2,
+          seasonalColors && { backgroundColor: seasonalColors.blobColor2 },
+          {
+            opacity: blob2Anim.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.16] }),
+            transform: [
+              { scale: blob2Anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] }) },
+              { translateX: blob2Drift.interpolate({ inputRange: [0, 1], outputRange: [0, -12] }) },
+              { translateY: blob2Drift.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) },
+            ],
+          },
+        ]} />
       </View>
 
       {/* Top bar */}
@@ -177,28 +256,28 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
 
       {/* Live strip */}
       <View style={styles.liveStrip} accessibilityRole="summary">
-        <View style={styles.liveItem} accessible accessibilityLabel={`Humidity ${weather?.humidity ?? 'unknown'} percent. Moisture in air`}>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem1, transform: [{ translateX: liveItem1.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Humidity ${weather?.humidity ?? 'unknown'} percent. Moisture in air`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>{weather?.humidity ?? '--'}%</Text>
             <Text style={styles.liveLabel}>Hum</Text>
             <View style={styles.liveDot} />
           </View>
           <Text style={styles.liveHint}>Moisture in air</Text>
-        </View>
-        <View style={styles.liveItem} accessible accessibilityLabel={`Wind ${Math.round((weather?.windSpeed || 0) * 3.6)} kilometers per hour`}>
+        </Animated.View>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem2, transform: [{ translateX: liveItem2.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Wind ${Math.round((weather?.windSpeed || 0) * 3.6)} kilometers per hour`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>{Math.round((weather?.windSpeed || 0) * 3.6)}km/h</Text>
             <Text style={styles.liveLabel}>Wind</Text>
           </View>
           <Text style={styles.liveHint}>Wind speed</Text>
-        </View>
-        <View style={styles.liveItem} accessible accessibilityLabel={`UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength`}>
+        </Animated.View>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem3, transform: [{ translateX: liveItem3.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength`}>
           <View style={styles.liveRow}>
             <Text style={styles.liveVal}>UV {weather?.uvIndex ?? '--'}</Text>
             <Text style={styles.liveLabel}>Index</Text>
           </View>
           <Text style={styles.liveHint}>Sun exposure</Text>
-        </View>
+        </Animated.View>
 
         {/* Refresh button */}
         <TouchableOpacity
@@ -264,7 +343,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       </Animated.View>
 
       {/* Footer */}
-      <View style={styles.nowFooter}>
+      <Animated.View style={[styles.nowFooter, { opacity: footerFade }]}>
         <Text style={styles.conditionLong}>
           {expressiveDescription || `${condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
         </Text>
@@ -272,7 +351,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           <View style={styles.pullHintLine} />
           <Text style={styles.pullHintText}>Swipe to explore</Text>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 });
@@ -289,7 +368,6 @@ const styles = StyleSheet.create({
   inkBlob: {
     position: 'absolute',
     borderRadius: 999,
-    opacity: 0.12,
   },
   blob1: {
     width: 340,
