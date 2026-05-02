@@ -5,14 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  Easing,
   AccessibilityInfo,
+  Dimensions,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
-const ITEM_WIDTH = sw(58);
+const { height: SCREEN_H } = Dimensions.get('window');
+const ITEM_WIDTH = sw(62);
 
 interface HourlyScreenProps {
   hourly: TimelineInterval[];
@@ -33,6 +36,8 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
 
   // Staggered row animations for forecast
   const rowAnims = useRef(daily.map(() => new Animated.Value(0))).current;
+  // Bar fill animations
+  const barAnims = useRef(daily.map(() => new Animated.Value(0))).current;
   const [reduceMotion, setReduceMotion] = React.useState(false);
 
   useEffect(() => {
@@ -45,14 +50,27 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
     if (!daily.length) return;
     if (reduceMotion) {
       rowAnims.forEach(a => a.setValue(1));
+      barAnims.forEach(a => a.setValue(1));
       return;
     }
     rowAnims.forEach(a => a.setValue(0));
-    Animated.stagger(50,
+    barAnims.forEach(a => a.setValue(0));
+
+    Animated.stagger(60,
       rowAnims.map(anim =>
-        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 90 })
+        Animated.spring(anim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 85 })
       )
     ).start();
+
+    // Delayed bar fill animation
+    Animated.sequence([
+      Animated.delay(300),
+      Animated.stagger(80,
+        barAnims.map(anim =>
+          Animated.timing(anim, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: false })
+        )
+      ),
+    ]).start();
   }, [daily, reduceMotion]);
 
   const formatHour = (iso: string, index: number) => {
@@ -72,12 +90,24 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+    return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
   };
 
   const windDirText = (deg: number) => {
     const dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     return dirs[Math.round(deg / 22.5) % 16];
+  };
+
+  /** Short condition label for forecast rows */
+  const shortCondition = (label: string) => {
+    if (label.length <= 10) return label;
+    // "Mostly Cloudy" → "M. Cloudy", "Light Rain" → "Lt. Rain"
+    return label
+      .replace('Mostly ', 'M. ')
+      .replace('Partly ', 'P. ')
+      .replace('Light ', 'Lt. ')
+      .replace('Heavy ', 'Hv. ')
+      .replace('Freezing ', 'Fr. ');
   };
 
   return (
@@ -111,6 +141,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             const code = item.values.weatherCode;
             const condition = WEATHER_CODES[code] || WEATHER_CODES[1000];
             const isNow = index === 0;
+            const precip = item.values.precipitationProbability;
 
             return (
               <View
@@ -118,26 +149,21 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 style={[styles.tapeItem, isNow && styles.tapeItemNow]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${item.values.precipitationProbability} percent precipitation chance`}
+                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${precip} percent precipitation chance`}
               >
                 <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                   {formatHour(item.startTime, index)}
                 </Text>
+                <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
                 <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                   {Math.round(item.values.temperature)}°
                 </Text>
-                <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
-                <Text
-                  style={[styles.tapeCondLabel, isNow && styles.tapeTextMuted]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {condition.label.length > 8 ? condition.label.split(' ')[0] : condition.label}
-                </Text>
-                {item.values.precipitationProbability > 0 && (
-                  <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
-                    💧{item.values.precipitationProbability}%
-                  </Text>
+                {precip > 0 && (
+                  <View style={[styles.tapePrecipBadge, isNow && styles.tapePrecipBadgeNow]}>
+                    <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
+                      💧{precip}%
+                    </Text>
+                  </View>
                 )}
               </View>
             );
@@ -145,7 +171,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         </ScrollView>
       </View>
 
-      {/* 7-Day forecast rows */}
+      {/* Forecast section */}
       <View style={styles.forecastSection}>
         <View style={styles.forecastHeader}>
           <Text style={styles.forecastTitle}>{daily.length}-Day Forecast</Text>
@@ -162,18 +188,21 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             const condition = WEATHER_CODES[day.values.weatherCode] || WEATHER_CODES[1000];
             const barLeft = ((day.values.temperatureMin - minTemp) / range) * 100;
             const barWidth = ((day.values.temperatureMax - day.values.temperatureMin) / range) * 100;
+            const precip = day.values.precipitationProbability;
 
             const rowOpacity = rowAnims[index] || new Animated.Value(1);
             const rowTranslateY = rowOpacity.interpolate({
               inputRange: [0, 1],
-              outputRange: [30, 0],
+              outputRange: [24, 0],
             });
+            const barScale = barAnims[index] || new Animated.Value(1);
 
             return (
               <Animated.View
                 key={day.startTime}
                 style={[
                   styles.row,
+                  index === daily.length - 1 && styles.rowLast,
                   {
                     opacity: rowOpacity,
                     transform: [{ translateY: rowTranslateY }],
@@ -181,23 +210,48 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 ]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}. ${day.values.precipitationProbability} percent precipitation`}
+                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}.${precip > 0 ? ` ${precip} percent precipitation.` : ''}`}
               >
+                {/* Day + date */}
                 <View style={styles.dayCol}>
                   <Text style={styles.fcDay}>{formatDay(day.startTime, index)}</Text>
                   <Text style={styles.fcDate}>{formatDate(day.startTime)}</Text>
                 </View>
-                <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
+
+                {/* Icon + condition */}
+                <View style={styles.condCol}>
+                  <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
+                  <Text style={styles.fcCondLabel} numberOfLines={1}>{shortCondition(condition.label)}</Text>
+                </View>
+
+                {/* Precip badge */}
+                <View style={styles.precipCol}>
+                  {precip > 0 ? (
+                    <View style={styles.fcPrecipBadge}>
+                      <Text style={styles.fcPrecipText}>💧{precip}%</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Temperature bar */}
                 <View style={styles.barCol}>
                   <View style={styles.barTrack}>
-                    <View
+                    <Animated.View
                       style={[
                         styles.barFill,
-                        { left: `${barLeft}%`, width: `${barWidth}%` },
+                        {
+                          left: `${barLeft}%`,
+                          width: barScale.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0%', `${barWidth}%`],
+                          }),
+                        },
                       ]}
                     />
                   </View>
                 </View>
+
+                {/* Temps */}
                 <View style={styles.tempsCol}>
                   <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
                   <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
@@ -222,7 +276,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: 12,
+    paddingBottom: sh(10),
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
@@ -257,24 +311,26 @@ const styles = StyleSheet.create({
   tapeSection: {
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
+    paddingBottom: sh(2),
   },
   tape: {
-    paddingHorizontal: sw(20),
+    paddingHorizontal: sw(16),
   },
   tapeContent: {
     gap: 0,
-    paddingRight: sw(20),
+    paddingRight: sw(16),
   },
   tapeItem: {
     width: ITEM_WIDTH,
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: sh(10),
+    paddingHorizontal: 2,
     borderRightWidth: 0.5,
     borderRightColor: theme.colors.faint,
   },
   tapeItemNow: {
     backgroundColor: theme.colors.ink,
-    borderRadius: 4,
+    borderRadius: 6,
   },
   tapeHr: {
     fontFamily: theme.fonts.mono,
@@ -282,13 +338,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: theme.colors.muted,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 5,
   },
   tapeTemp: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: 18,
+    fontSize: ms(17),
     color: theme.colors.ink,
-    lineHeight: 20,
+    lineHeight: ms(19),
+    marginTop: 4,
   },
   tapeTextLight: {
     color: theme.colors.paper,
@@ -297,22 +354,23 @@ const styles = StyleSheet.create({
     color: 'rgba(240,235,225,0.5)',
   },
   tapeCond: {
-    fontSize: 14,
-    marginVertical: 2,
+    fontSize: 16,
+    marginBottom: 1,
   },
-  tapeCondLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: theme.colors.muted,
-    letterSpacing: 0.3,
-    textAlign: 'center',
-    width: ITEM_WIDTH - 8,
+  tapePrecipBadge: {
+    marginTop: 4,
+    backgroundColor: 'rgba(28,93,196,0.08)',
+    borderRadius: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  tapePrecipBadgeNow: {
+    backgroundColor: 'rgba(28,93,196,0.2)',
   },
   tapePrecipVal: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 7,
     color: theme.colors.accent2,
-    marginTop: 2,
   },
 
   /* --- Forecast --- */
@@ -320,12 +378,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: sw(20),
     justifyContent: 'center',
+    paddingVertical: sh(8),
   },
   forecastHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: sh(6),
     paddingHorizontal: sw(4),
   },
   forecastTitle: {
@@ -360,8 +419,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
   },
+  rowLast: {
+    borderBottomWidth: 0,
+  },
   dayCol: {
-    width: sw(60),
+    width: sw(52),
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
@@ -370,19 +432,45 @@ const styles = StyleSheet.create({
   },
   fcDate: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
-    letterSpacing: 0.8,
+    fontSize: 7,
+    letterSpacing: 0.5,
     color: theme.colors.muted,
     marginTop: 1,
   },
+  condCol: {
+    alignItems: 'center',
+    width: sw(44),
+  },
   fcIcon: {
     fontSize: 18,
-    width: sw(28),
     textAlign: 'center',
+  },
+  fcCondLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 7,
+    color: theme.colors.muted,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    marginTop: 1,
+  },
+  precipCol: {
+    width: sw(38),
+    alignItems: 'center',
+  },
+  fcPrecipBadge: {
+    backgroundColor: 'rgba(28,93,196,0.08)',
+    borderRadius: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  fcPrecipText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 8,
+    color: theme.colors.accent2,
   },
   barCol: {
     flex: 1,
-    paddingHorizontal: sw(8),
+    paddingHorizontal: sw(6),
   },
   barTrack: {
     height: 5,
@@ -401,8 +489,8 @@ const styles = StyleSheet.create({
   tempsCol: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
-    minWidth: sw(52),
+    gap: 3,
+    minWidth: sw(48),
     justifyContent: 'flex-end',
   },
   fcHi: {
