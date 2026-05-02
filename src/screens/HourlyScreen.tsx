@@ -7,15 +7,13 @@ import {
   Animated,
   Easing,
   AccessibilityInfo,
-  Dimensions,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
-const { height: SCREEN_H } = Dimensions.get('window');
-const ITEM_WIDTH = sw(62);
+const ITEM_WIDTH = sw(64);
 
 interface HourlyScreenProps {
   hourly: TimelineInterval[];
@@ -98,17 +96,6 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
     return dirs[Math.round(deg / 22.5) % 16];
   };
 
-  /** Short condition label for forecast rows */
-  const shortCondition = (label: string) => {
-    if (label.length <= 10) return label;
-    // "Mostly Cloudy" → "M. Cloudy", "Light Rain" → "Lt. Rain"
-    return label
-      .replace('Mostly ', 'M. ')
-      .replace('Partly ', 'P. ')
-      .replace('Light ', 'Lt. ')
-      .replace('Heavy ', 'Hv. ')
-      .replace('Freezing ', 'Fr. ');
-  };
 
   return (
     <View style={styles.container}>
@@ -159,11 +146,9 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                   {Math.round(item.values.temperature)}°
                 </Text>
                 {precip > 0 && (
-                  <View style={[styles.tapePrecipBadge, isNow && styles.tapePrecipBadgeNow]}>
-                    <Text style={[styles.tapePrecipVal, isNow && styles.tapeTextMuted]}>
-                      💧{precip}%
-                    </Text>
-                  </View>
+                  <Text style={[styles.tapePrecip, isNow && styles.tapePrecipLight]}>
+                    💧{precip}%
+                  </Text>
                 )}
               </View>
             );
@@ -171,15 +156,21 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         </ScrollView>
       </View>
 
-      {/* Forecast section */}
+      {/* Section break */}
+      <View style={styles.sectionBreak}>
+        <View style={styles.breakLine} />
+      </View>
+
+      {/* Forecast */}
       <View style={styles.forecastSection}>
         <View style={styles.forecastHeader}>
           <Text style={styles.forecastTitle}>{daily.length}-Day Forecast</Text>
           <View style={styles.legend}>
-            <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
-            <Text style={styles.legendText}>Hi</Text>
             <View style={[styles.legendDot, { backgroundColor: theme.colors.accent2 }]} />
             <Text style={styles.legendText}>Lo</Text>
+            <View style={styles.legendSpacer} />
+            <View style={[styles.legendDot, { backgroundColor: theme.colors.accent }]} />
+            <Text style={styles.legendText}>Hi</Text>
           </View>
         </View>
 
@@ -214,24 +205,15 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
               >
                 {/* Day + date */}
                 <View style={styles.dayCol}>
-                  <Text style={styles.fcDay}>{formatDay(day.startTime, index)}</Text>
+                  <Text style={[styles.fcDay, index === 0 && styles.fcDayToday]}>{formatDay(day.startTime, index)}</Text>
                   <Text style={styles.fcDate}>{formatDate(day.startTime)}</Text>
                 </View>
 
-                {/* Icon + condition */}
-                <View style={styles.condCol}>
-                  <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
-                  <Text style={styles.fcCondLabel} numberOfLines={1}>{shortCondition(condition.label)}</Text>
-                </View>
+                {/* Icon */}
+                <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
 
-                {/* Precip badge */}
-                <View style={styles.precipCol}>
-                  {precip > 0 ? (
-                    <View style={styles.fcPrecipBadge}>
-                      <Text style={styles.fcPrecipText}>💧{precip}%</Text>
-                    </View>
-                  ) : null}
-                </View>
+                {/* Lo temp */}
+                <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
 
                 {/* Temperature bar */}
                 <View style={styles.barCol}>
@@ -251,10 +233,14 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                   </View>
                 </View>
 
-                {/* Temps */}
-                <View style={styles.tempsCol}>
-                  <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
-                  <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
+                {/* Hi temp */}
+                <Text style={styles.fcHi}>{Math.round(day.values.temperatureMax)}°</Text>
+
+                {/* Precip */}
+                <View style={styles.precipCol}>
+                  {precip > 0 ? (
+                    <Text style={styles.fcPrecip}>💧{precip}%</Text>
+                  ) : null}
                 </View>
               </Animated.View>
             );
@@ -270,18 +256,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.paperDark,
   },
+
+  /* --- Header --- */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
     paddingTop: getStatusBarPadding(),
     paddingHorizontal: sw(28),
-    paddingBottom: sh(10),
+    paddingBottom: sh(12),
   },
   title: {
     fontFamily: theme.fonts.serifBlack,
     fontSize: ms(24),
     color: theme.colors.ink,
+    marginTop: 4,
   },
   eyebrow: {
     fontFamily: theme.fonts.mono,
@@ -289,7 +278,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
     color: theme.colors.muted,
-    marginBottom: 2,
   },
   windBadge: {
     alignItems: 'flex-end',
@@ -309,68 +297,64 @@ const styles = StyleSheet.create({
 
   /* --- Tape --- */
   tapeSection: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: theme.colors.faint,
-    paddingBottom: sh(2),
+    paddingBottom: sh(4),
   },
   tape: {
-    paddingHorizontal: sw(16),
+    paddingHorizontal: sw(20),
   },
   tapeContent: {
-    gap: 0,
-    paddingRight: sw(16),
+    gap: sw(4),
+    paddingRight: sw(20),
   },
   tapeItem: {
     width: ITEM_WIDTH,
     alignItems: 'center',
-    paddingVertical: sh(10),
-    paddingHorizontal: 2,
-    borderRightWidth: 0.5,
-    borderRightColor: theme.colors.faint,
+    paddingVertical: sh(12),
+    borderRadius: 12,
+    backgroundColor: 'rgba(15,14,12,0.03)',
   },
   tapeItemNow: {
     backgroundColor: theme.colors.ink,
-    borderRadius: 6,
   },
   tapeHr: {
     fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 9,
     letterSpacing: 1,
     color: theme.colors.muted,
     textTransform: 'uppercase',
-    marginBottom: 5,
+    marginBottom: 6,
   },
   tapeTemp: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(17),
+    fontSize: ms(18),
     color: theme.colors.ink,
-    lineHeight: ms(19),
-    marginTop: 4,
+    marginTop: 5,
   },
   tapeTextLight: {
     color: theme.colors.paper,
   },
-  tapeTextMuted: {
-    color: 'rgba(240,235,225,0.5)',
-  },
   tapeCond: {
-    fontSize: 16,
-    marginBottom: 1,
+    fontSize: 20,
   },
-  tapePrecipBadge: {
-    marginTop: 4,
-    backgroundColor: 'rgba(28,93,196,0.08)',
-    borderRadius: 3,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  tapePrecipBadgeNow: {
-    backgroundColor: 'rgba(28,93,196,0.2)',
-  },
-  tapePrecipVal: {
+  tapePrecip: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
+    fontSize: 8,
     color: theme.colors.accent2,
+    marginTop: 5,
+  },
+  tapePrecipLight: {
+    color: 'rgba(240,235,225,0.55)',
+  },
+
+  /* --- Section break --- */
+  sectionBreak: {
+    alignItems: 'center',
+    paddingVertical: sh(10),
+  },
+  breakLine: {
+    width: sw(32),
+    height: 1,
+    backgroundColor: theme.colors.faint,
   },
 
   /* --- Forecast --- */
@@ -378,14 +362,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: sw(20),
     justifyContent: 'center',
-    paddingVertical: sh(8),
   },
   forecastHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: sh(6),
-    paddingHorizontal: sw(4),
+    marginBottom: sh(8),
+    paddingHorizontal: sw(6),
   },
   forecastTitle: {
     fontFamily: theme.fonts.mono,
@@ -397,12 +380,15 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   legendDot: {
     width: 5,
     height: 5,
     borderRadius: 3,
+  },
+  legendSpacer: {
+    width: 6,
   },
   legendText: {
     fontFamily: theme.fonts.mono,
@@ -415,7 +401,8 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: sh(9),
+    paddingVertical: sh(10),
+    paddingHorizontal: sw(6),
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
   },
@@ -423,12 +410,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   dayCol: {
-    width: sw(52),
+    width: sw(56),
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
     fontSize: ms(13),
     color: theme.colors.ink,
+  },
+  fcDayToday: {
+    color: theme.colors.accent,
   },
   fcDate: {
     fontFamily: theme.fonts.mono,
@@ -437,43 +427,24 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginTop: 1,
   },
-  condCol: {
-    alignItems: 'center',
-    width: sw(44),
-  },
   fcIcon: {
     fontSize: 18,
+    width: sw(28),
     textAlign: 'center',
   },
-  fcCondLabel: {
+  fcLo: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
-    color: theme.colors.muted,
-    letterSpacing: 0.2,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-  precipCol: {
-    width: sw(38),
-    alignItems: 'center',
-  },
-  fcPrecipBadge: {
-    backgroundColor: 'rgba(28,93,196,0.08)',
-    borderRadius: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-  },
-  fcPrecipText: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 8,
+    fontSize: 11,
     color: theme.colors.accent2,
+    width: sw(30),
+    textAlign: 'right',
+    marginRight: sw(6),
   },
   barCol: {
     flex: 1,
-    paddingHorizontal: sw(6),
   },
   barTrack: {
-    height: 5,
+    height: 6,
     borderRadius: 3,
     backgroundColor: theme.colors.faint,
     position: 'relative',
@@ -486,21 +457,21 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: theme.colors.accent,
   },
-  tempsCol: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
-    minWidth: sw(48),
-    justifyContent: 'flex-end',
-  },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(14),
+    fontSize: ms(13),
     color: theme.colors.accent,
+    width: sw(30),
+    textAlign: 'left',
+    marginLeft: sw(6),
   },
-  fcLo: {
+  precipCol: {
+    width: sw(34),
+    alignItems: 'flex-end',
+  },
+  fcPrecip: {
     fontFamily: theme.fonts.mono,
-    fontSize: 11,
+    fontSize: 8,
     color: theme.colors.accent2,
   },
 });
