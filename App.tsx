@@ -48,12 +48,14 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { WeatherEffects } from './src/components/WeatherEffects';
 import { getExpressiveDescription, getSeasonalColors } from './src/utils/weatherPoetry';
 import { LoadingScreen } from './src/components/LoadingScreen';
+import { AuthScreen } from './src/screens/AuthScreen';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LAYER_LABELS = ['Now', 'Atmosphere', 'Timeline', 'Science'];
 const LAST_LAYER_KEY = 'strata_last_layer';
 const ONBOARDED_KEY = 'strata_onboarded';
+const AUTH_KEY = 'strata_auth_state'; // 'signed_in' | 'guest' | null
 
 // Layers 1 (Atmosphere) and 3 (Science) have dark backgrounds
 const DARK_LAYERS = new Set([1, 3]);
@@ -95,6 +97,26 @@ export default function App(props: { initialLayer?: number }) {
     'SpaceMono-Regular': SpaceMono_400Regular,
     'SpaceMono-Bold': SpaceMono_700Bold,
   });
+
+  // --- Auth gate ---
+  const [authState, setAuthState] = useState<'loading' | 'none' | 'signed_in' | 'guest'>('loading');
+
+  useEffect(() => {
+    AsyncStorage.getItem(AUTH_KEY).then(val => {
+      setAuthState((val as 'signed_in' | 'guest') || 'none');
+    });
+  }, []);
+
+  const handleSignIn = useCallback(() => {
+    // TODO: Replace with real auth flow (Firebase/Supabase)
+    AsyncStorage.setItem(AUTH_KEY, 'signed_in');
+    setAuthState('signed_in');
+  }, []);
+
+  const handleGuest = useCallback(() => {
+    AsyncStorage.setItem(AUTH_KEY, 'guest');
+    setAuthState('guest');
+  }, []);
 
   const { coords, locationName, loading: locLoading } = useLocation();
   const { data, loading: weatherLoading, error, refresh } = useWeather(coords);
@@ -362,13 +384,18 @@ export default function App(props: { initialLayer?: number }) {
   }, [refresh]);
 
   // --- Show splash while fonts load ---
-  if (!fontsLoaded) {
+  if (!fontsLoaded || authState === 'loading') {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" backgroundColor={theme.colors.paper} />
         <LoadingScreen tipIndex={tipIndex} tipFade={tipFade} />
       </View>
     );
+  }
+
+  // --- Auth gate ---
+  if (authState === 'none') {
+    return <AuthScreen onSignIn={handleSignIn} onGuest={handleGuest} />;
   }
 
   // Show splash as full-screen takeover — always first thing user sees
