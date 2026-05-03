@@ -371,16 +371,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: sh(12),
     borderRadius: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 0.5,
-    borderColor: theme.colors.faint,
+    backgroundColor: 'rgba(15,14,12,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(15,14,12,0.1)',
   },
   tapeItemNow: {
     backgroundColor: theme.colors.ink,
     borderColor: theme.colors.ink,
   },
   tapeItemNight: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(15,14,12,0.08)',
     borderColor: 'rgba(15,14,12,0.15)',
   },
   tapeNightIcon: {
@@ -389,12 +389,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   tapeHr: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    letterSpacing: 1,
-    color: theme.colors.muted,
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: theme.colors.ink,
     textTransform: 'uppercase',
     marginBottom: 6,
+    opacity: 0.6,
   },
   tapeTemp: {
     fontFamily: theme.fonts.serifBlack,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
     color: theme.colors.paper,
   },
   tapeCond: {
-    fontSize: 20,
+    fontSize: 24,
   },
   tapePrecip: {
     fontFamily: theme.fonts.mono,
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
   tapePrecipBar: {
     width: 4,
     height: 20,
-    backgroundColor: 'rgba(28,93,196,0.1)',
+    backgroundColor: 'rgba(28,93,196,0.15)',
     borderRadius: 0,
     marginTop: 4,
     overflow: 'hidden',
