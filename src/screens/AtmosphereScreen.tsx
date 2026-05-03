@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues } from '../types/weather';
+import { ProOverlay } from '../components/ProBadge';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface AtmosphereScreenProps {
@@ -103,6 +104,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
           barAnim={barAnims[3]}
           color="rgba(240,235,225,0.4)"
           isLeft={false}
+          isPro
         />
 
         {/* Row 3 */}
@@ -124,8 +126,43 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
           color={theme.colors.accent}
           isLeft={false}
           valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+          isPro
         />
       </View>
+
+      {/* Precipitation & wind data strip */}
+      {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0 || (weather?.windSpeed ?? 0) > 0) && (
+        <View style={styles.dataStrip}>
+          {(weather?.rainVolume ?? 0) > 0 && (
+            <View style={styles.dataChip}>
+              <Text style={styles.dataChipIcon}>🌧</Text>
+              <Text style={styles.dataChipVal}>{weather!.rainVolume!.toFixed(1)} mm</Text>
+              <Text style={styles.dataChipLabel}>Rain (1h)</Text>
+            </View>
+          )}
+          {(weather?.snowVolume ?? 0) > 0 && (
+            <View style={styles.dataChip}>
+              <Text style={styles.dataChipIcon}>❄</Text>
+              <Text style={styles.dataChipVal}>{weather!.snowVolume!.toFixed(1)} mm</Text>
+              <Text style={styles.dataChipLabel}>Snow (1h)</Text>
+            </View>
+          )}
+          {(weather?.windSpeed ?? 0) > 0 && (
+            <View style={styles.dataChip}>
+              <Text style={styles.dataChipIcon}>💨</Text>
+              <Text style={styles.dataChipVal}>{Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h</Text>
+              <Text style={styles.dataChipLabel}>{getWindDir(weather?.windDirection ?? 0)}</Text>
+            </View>
+          )}
+          {weather?.description ? (
+            <View style={styles.dataChip}>
+              <Text style={styles.dataChipIcon}>☁</Text>
+              <Text style={styles.dataChipVal}>{weather.description.charAt(0).toUpperCase() + weather.description.slice(1)}</Text>
+              <Text style={styles.dataChipLabel}>OWM Desc</Text>
+            </View>
+          ) : null}
+        </View>
+      )}
 
       {/* Wind gust alert */}
       {(weather?.windGust || 0) > 15 && (
@@ -143,24 +180,24 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
   );
 });
 
+function getWindDir(deg: number): string {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8] + ' wind';
+}
+
 function MetricCell({
-  label, value, unit, hint, barAnim, color, isLeft, valueColor,
+  label, value, unit, hint, barAnim, color, isLeft, valueColor, isPro,
 }: {
   label: string; value: string; unit: string; hint: string;
-  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string;
+  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string; isPro?: boolean;
 }) {
   const barWidth = barAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
-  return (
-    <View
-      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}
-    >
+  const content = (
+    <>
       <Text style={styles.cellLabel}>{label}</Text>
       <Text style={[styles.cellVal, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
       <Text style={styles.cellUnit}>{unit}</Text>
@@ -168,6 +205,17 @@ function MetricCell({
         <Animated.View style={[styles.barFill, { width: barWidth, backgroundColor: color }]} importantForAccessibility="no" />
       </View>
       <Text style={styles.cellHint}>{hint}</Text>
+    </>
+  );
+
+  return (
+    <View
+      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={isPro ? `${label}. Upgrade to Pro to unlock.` : `${label} ${value} ${unit}. ${hint}`}
+    >
+      {isPro ? <ProOverlay dark>{content}</ProOverlay> : content}
     </View>
   );
 }
@@ -305,5 +353,40 @@ const styles = StyleSheet.create({
     color: 'rgba(240,235,225,0.65)',
     marginTop: 3,
     lineHeight: 16,
+  },
+
+  /* ---- Data strip (rain/snow/wind/description) ---- */
+  dataStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: sw(22),
+    marginTop: 20,
+    gap: 10,
+  },
+  dataChip: {
+    backgroundColor: 'rgba(240,235,225,0.06)',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    minWidth: sw(70),
+  },
+  dataChipIcon: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  dataChipVal: {
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 13,
+    color: theme.colors.paper,
+    letterSpacing: 0.3,
+  },
+  dataChipLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    color: 'rgba(240,235,225,0.45)',
+    letterSpacing: 0.5,
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
 });

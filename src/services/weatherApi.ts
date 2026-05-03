@@ -34,6 +34,9 @@ function mapCurrentWeather(data: any): WeatherValues {
     dewPoint: 0, // Not in basic current — filled from One Call
     precipitationProbability: 0, // Not in current weather
     weatherCode: owmToInternalCode(weather.id ?? 800),
+    rainVolume: data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0,
+    snowVolume: data.snow?.['1h'] ?? data.snow?.['3h'] ?? 0,
+    description: weather.description ?? '',
   };
 }
 
@@ -59,6 +62,9 @@ function mapHourlyItem(item: any): TimelineInterval {
       dewPoint: 0,
       precipitationProbability: Math.round((item.pop ?? 0) * 100),
       weatherCode: owmToInternalCode(weather.id ?? 800),
+      rainVolume: item.rain?.['3h'] ?? 0,
+      snowVolume: item.snow?.['3h'] ?? 0,
+      description: weather.description ?? '',
     },
   };
 }

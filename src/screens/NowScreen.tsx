@@ -13,6 +13,7 @@ import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
+import { ProBadge } from '../components/ProBadge';
 import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -271,12 +272,12 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Wind speed</Text>
         </Animated.View>
-        <Animated.View style={[styles.liveItem, { opacity: liveItem3, transform: [{ translateX: liveItem3.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength`}>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem3, transform: [{ translateX: liveItem3.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`UV index. Upgrade to Pro to unlock`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>UV {weather?.uvIndex ?? '--'}</Text>
-            <Text style={styles.liveLabel}>Index</Text>
+            <Text style={[styles.liveVal, { opacity: 0.35 }]}>UV --</Text>
+            <ProBadge dark={false} />
           </View>
-          <Text style={styles.liveHint}>Sun exposure</Text>
+          <Text style={styles.liveHint}>Pro feature</Text>
         </Animated.View>
 
         {/* Refresh button */}
@@ -345,8 +346,15 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <Animated.View style={[styles.nowFooter, { opacity: footerFade }]}>
         <Text style={styles.conditionLong}>
-          {expressiveDescription || `${condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
+          {expressiveDescription || `${weather?.description ? (weather.description.charAt(0).toUpperCase() + weather.description.slice(1)) : condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
         </Text>
+        {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0) && (
+          <Text style={styles.precipNote}>
+            {(weather?.rainVolume ?? 0) > 0 ? `🌧 ${weather!.rainVolume!.toFixed(1)} mm rain` : ''}
+            {(weather?.rainVolume ?? 0) > 0 && (weather?.snowVolume ?? 0) > 0 ? '  ·  ' : ''}
+            {(weather?.snowVolume ?? 0) > 0 ? `❄ ${weather!.snowVolume!.toFixed(1)} mm snow` : ''}
+          </Text>
+        )}
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />
           <Text style={styles.pullHintText}>Swipe to explore</Text>
@@ -531,6 +539,13 @@ const styles = StyleSheet.create({
     lineHeight: ms(22),
     color: theme.colors.muted,
     maxWidth: sw(260),
+  },
+  precipNote: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: theme.colors.muted,
+    marginTop: 6,
+    letterSpacing: 0.5,
   },
   pullHint: {
     alignItems: 'center',

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
+import { ProOverlay } from '../components/ProBadge';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface ScienceScreenProps {
@@ -89,6 +90,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
           color={theme.colors.accent}
           isLeft
           valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+          isPro
         />
         {/* Pressure */}
         <MetricCell
@@ -109,6 +111,7 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
           barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
           isLeft
+          isPro
         />
         {/* Humidity */}
         <MetricCell
@@ -158,23 +161,18 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
 });
 
 function MetricCell({
-  label, value, unit, hint, barAnim, color, isLeft, valueColor,
+  label, value, unit, hint, barAnim, color, isLeft, valueColor, isPro,
 }: {
   label: string; value: string; unit: string; hint: string;
-  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string;
+  barAnim: Animated.Value; color: string; isLeft: boolean; valueColor?: string; isPro?: boolean;
 }) {
   const barWidth = barAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
-  return (
-    <View
-      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={`${label} ${value} ${unit}. ${hint}`}
-    >
+  const content = (
+    <>
       <Text style={styles.cellLabel}>{label}</Text>
       <Text style={[styles.cellVal, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
       <Text style={styles.cellUnit}>{unit}</Text>
@@ -182,6 +180,17 @@ function MetricCell({
         <Animated.View style={[styles.barFill, { width: barWidth, backgroundColor: color }]} importantForAccessibility="no" />
       </View>
       <Text style={styles.cellHint}>{hint}</Text>
+    </>
+  );
+
+  return (
+    <View
+      style={[styles.cell, isLeft ? styles.cellLeft : styles.cellRight]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={isPro ? `${label}. Upgrade to Pro to unlock.` : `${label} ${value} ${unit}. ${hint}`}
+    >
+      {isPro ? <ProOverlay dark>{content}</ProOverlay> : content}
     </View>
   );
 }

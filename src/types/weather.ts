@@ -12,6 +12,9 @@ export interface WeatherValues {
   dewPoint: number;
   precipitationProbability: number;
   weatherCode: number;
+  rainVolume?: number;
+  snowVolume?: number;
+  description?: string;
 }
 
 export interface TimelineInterval {
