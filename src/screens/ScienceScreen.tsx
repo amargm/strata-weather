@@ -147,43 +147,62 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         </View>
       </View>
 
-      {/* Account actions */}
-      <View style={styles.accountRow}>
+      {/* ---- Account & App footer ---- */}
+      <View style={styles.footerSection}>
+        <View style={styles.footerDivider} />
+
+        {/* Upgrade banner — only for non-Pro */}
         {!isPro && (
           <TouchableOpacity
-            style={styles.upgradeBtn}
+            style={styles.upgradeBanner}
             onPress={showPaywall}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             accessible
             accessibilityRole="button"
-            accessibilityLabel="Upgrade to Pro"
+            accessibilityLabel="Upgrade to Strata Pro"
           >
-            <Text style={styles.upgradeBtnText}>Upgrade to Pro</Text>
+            <View style={styles.upgradeBannerLeft}>
+              <Text style={styles.upgradeBannerTitle}>Strata Pro</Text>
+              <Text style={styles.upgradeBannerSub}>Unlock UV, dew point & more</Text>
+            </View>
+            <View style={styles.upgradePill}>
+              <Text style={styles.upgradePillText}>Upgrade</Text>
+            </View>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={styles.signOutBtn}
-          onPress={signOut}
-          activeOpacity={0.6}
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel="Sign out"
-        >
-          <Text style={styles.closeBtnText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Close app */}
-      <TouchableOpacity
-        style={styles.closeBtn}
-        onPress={() => BackHandler.exitApp()}
-        activeOpacity={0.6}
-        accessible
-        accessibilityRole="button"
-        accessibilityLabel="Close app"
-      >
-        <Text style={styles.closeBtnText}>Close Strata</Text>
-      </TouchableOpacity>
+        {/* Action row */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={signOut}
+            activeOpacity={0.6}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+          >
+            <Text style={styles.actionIcon}>↩</Text>
+            <Text style={styles.actionLabel}>Sign Out</Text>
+          </TouchableOpacity>
+
+          <View style={styles.actionDivider} />
+
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => BackHandler.exitApp()}
+            activeOpacity={0.6}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Close app"
+          >
+            <Text style={styles.actionIcon}>✕</Text>
+            <Text style={styles.actionLabel}>Close App</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* App branding */}
+        <Text style={styles.brandMark}>Strata · Weather, felt.</Text>
+      </View>
     </ScrollView>
   );
 });
@@ -363,51 +382,107 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: theme.colors.paper,
   },
-  closeBtn: {
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 28,
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(240,235,225,0.15)',
+
+  /* ---- Footer section ---- */
+  footerSection: {
+    marginTop: 32,
+    paddingBottom: 20,
   },
-  closeBtnText: {
+  footerDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(240,235,225,0.08)',
+    marginHorizontal: sw(22),
+    marginBottom: 20,
+  },
+
+  /* Upgrade banner */
+  upgradeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: sw(22),
+    marginBottom: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    backgroundColor: 'rgba(196,65,28,0.08)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(196,65,28,0.25)',
+  },
+  upgradeBannerLeft: {
+    flex: 1,
+  },
+  upgradeBannerTitle: {
+    fontFamily: theme.fonts.serifBold,
+    fontSize: 16,
+    color: theme.colors.paper,
+    letterSpacing: -0.3,
+  },
+  upgradeBannerSub: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.5)',
+    letterSpacing: 0.3,
+    marginTop: 2,
+  },
+  upgradePill: {
+    backgroundColor: theme.colors.accent,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  upgradePillText: {
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: theme.colors.paper,
+  },
+
+  /* Action row */
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: sw(22),
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: 'rgba(240,235,225,0.1)',
+    overflow: 'hidden',
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  actionDivider: {
+    width: 0.5,
+    height: 24,
+    backgroundColor: 'rgba(240,235,225,0.1)',
+  },
+  actionIcon: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 14,
+    color: 'rgba(240,235,225,0.4)',
+  },
+  actionLabel: {
     fontFamily: theme.fonts.mono,
     fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.45)',
   },
-  accountRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 28,
-    paddingHorizontal: sw(22),
-  },
-  upgradeBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 4,
-    backgroundColor: 'rgba(196,65,28,0.15)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(196,65,28,0.35)',
-  },
-  upgradeBtnText: {
-    fontFamily: theme.fonts.monoBold,
+
+  /* Brand mark */
+  brandMark: {
+    fontFamily: theme.fonts.serifItalic,
     fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: theme.colors.accent,
-  },
-  signOutBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(240,235,225,0.15)',
+    color: 'rgba(240,235,225,0.2)',
+    textAlign: 'center',
+    marginTop: 20,
+    letterSpacing: 0.5,
   },
 });
