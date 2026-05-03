@@ -15,6 +15,7 @@ export interface WeatherValues {
   rainVolume?: number;
   snowVolume?: number;
   description?: string;
+  isNight?: boolean;
 }
 
 export interface TimelineInterval {
@@ -40,6 +41,16 @@ export interface DailyInterval {
   values: DailyValues;
 }
 
+export interface AirQuality {
+  aqi: number; // 1-5 (Good, Fair, Moderate, Poor, Very Poor)
+  co: number;
+  no2: number;
+  o3: number;
+  pm2_5: number;
+  pm10: number;
+  so2: number;
+}
+
 export interface WeatherData {
   current: WeatherValues;
   hourly: TimelineInterval[];
@@ -49,6 +60,11 @@ export interface WeatherData {
     lon: number;
     name: string;
   };
+  sunriseTime?: string;
+  sunsetTime?: string;
+  dataTimestamp?: number;
+  pressureTrend?: 'rising' | 'falling' | 'steady';
+  airQuality?: AirQuality;
 }
 
 export interface LocationCoords {

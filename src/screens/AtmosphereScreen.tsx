@@ -1,15 +1,32 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
 import { theme } from '../utils/theme';
-import { WeatherValues } from '../types/weather';
+import { WeatherValues, AirQuality } from '../types/weather';
 import { ProOverlay } from '../components/ProBadge';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface AtmosphereScreenProps {
   weather: WeatherValues | null;
+  pressureTrend?: 'rising' | 'falling' | 'steady';
+  airQuality?: AirQuality;
+  dataTimestamp?: number;
 }
 
-export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }: AtmosphereScreenProps) {
+const AQI_LABELS: Record<number, { label: string; color: string }> = {
+  1: { label: 'Good', color: '#4caf50' },
+  2: { label: 'Fair', color: '#8bc34a' },
+  3: { label: 'Moderate', color: '#ff9800' },
+  4: { label: 'Poor', color: '#f44336' },
+  5: { label: 'Very Poor', color: '#9c27b0' },
+};
+
+const TREND_ARROW: Record<string, string> = {
+  rising: '↑',
+  falling: '↓',
+  steady: '→',
+};
+
+export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, pressureTrend, airQuality, dataTimestamp }: AtmosphereScreenProps) {
   const barAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -89,9 +106,9 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
         {/* Row 2 */}
         <MetricCell
           label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}`}
+          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
           unit="hPa"
-          hint="Weight of air above you. Below 1000 hPa often means storms."
+          hint={`Weight of air above you.${pressureTrend === 'falling' ? ' Falling — storms possible.' : pressureTrend === 'rising' ? ' Rising — clearing ahead.' : ' Below 1000 hPa often means storms.'}`}
           barAnim={barAnims[2]}
           color={theme.colors.accent}
           isLeft
@@ -175,6 +192,37 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather }
             </Text>
           </View>
         </View>
+      )}
+
+      {/* Air Quality Index */}
+      {airQuality && (
+        <View style={styles.aqiSection}>
+          <Text style={styles.aqiTitle}>Air Quality</Text>
+          <View style={styles.aqiRow}>
+            <View style={[styles.aqiBadge, { backgroundColor: AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
+              <Text style={styles.aqiBadgeNum}>{airQuality.aqi}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aqiLabel}>{AQI_LABELS[airQuality.aqi]?.label ?? 'Unknown'}</Text>
+              <Text style={styles.aqiDetail}>
+                PM2.5 {airQuality.pm2_5.toFixed(1)} · PM10 {airQuality.pm10.toFixed(1)} · O₃ {airQuality.o3.toFixed(1)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Data freshness */}
+      {dataTimestamp && (
+        <Text style={styles.freshnessText}>
+          {(() => {
+            const ago = Math.round((Date.now() - dataTimestamp) / 60000);
+            if (ago < 1) return 'Data updated just now';
+            if (ago === 1) return 'Data updated 1 min ago';
+            if (ago < 60) return `Data updated ${ago} min ago`;
+            return `Data updated ${Math.floor(ago / 60)}h ago`;
+          })()}
+        </Text>
       )}
     </ScrollView>
   );
@@ -388,5 +436,60 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: 2,
     textTransform: 'uppercase',
+  },
+
+  /* ---- AQI section ---- */
+  aqiSection: {
+    marginHorizontal: sw(22),
+    marginTop: 24,
+    backgroundColor: 'rgba(240,235,225,0.06)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  aqiTitle: {
+    fontFamily: theme.fonts.serifBold,
+    fontSize: 14,
+    color: theme.colors.paper,
+    marginBottom: 10,
+    letterSpacing: 0.3,
+  },
+  aqiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  aqiBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aqiBadgeNum: {
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 18,
+    color: '#fff',
+  },
+  aqiLabel: {
+    fontFamily: theme.fonts.serifBold,
+    fontSize: 15,
+    color: theme.colors.paper,
+  },
+  aqiDetail: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.55)',
+    letterSpacing: 0.3,
+    marginTop: 3,
+  },
+
+  /* ---- Freshness ---- */
+  freshnessText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.35)',
+    textAlign: 'center',
+    marginTop: 20,
+    letterSpacing: 0.5,
   },
 });

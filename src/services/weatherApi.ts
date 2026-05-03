@@ -1,5 +1,5 @@
 import { API_BASE_URL, owmToInternalCode } from '../utils/constants';
-import { WeatherData, WeatherValues, TimelineInterval, DailyInterval, DailyValues, LocationCoords } from '../types/weather';
+import { WeatherData, WeatherValues, TimelineInterval, DailyInterval, DailyValues, LocationCoords, AirQuality } from '../types/weather';
 import { NativeModules, Platform } from 'react-native';
 
 // API key — hardcoded for now, move to env/native module for production
@@ -37,6 +37,7 @@ function mapCurrentWeather(data: any): WeatherValues {
     rainVolume: data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0,
     snowVolume: data.snow?.['1h'] ?? data.snow?.['3h'] ?? 0,
     description: weather.description ?? '',
+    isNight: typeof weather.icon === 'string' && weather.icon.endsWith('n'),
   };
 }
 
@@ -65,6 +66,7 @@ function mapHourlyItem(item: any): TimelineInterval {
       rainVolume: item.rain?.['3h'] ?? 0,
       snowVolume: item.snow?.['3h'] ?? 0,
       description: weather.description ?? '',
+      isNight: (item.sys?.pod === 'n') || (typeof weather.icon === 'string' && weather.icon.endsWith('n')),
     },
   };
 }
@@ -113,6 +115,43 @@ function aggregateDaily(items: any[]): DailyInterval[] {
   return dailyIntervals;
 }
 
+/** Compute pressure trend from 3-hour forecast items */
+function computePressureTrend(items: any[]): 'rising' | 'falling' | 'steady' {
+  if (items.length < 3) return 'steady';
+  // Compare first 3 items (~9h) pressure trend
+  const pressures = items.slice(0, 4).map((d: any) => d.main?.pressure ?? 1013);
+  const first = pressures[0];
+  const last = pressures[pressures.length - 1];
+  const diff = last - first;
+  if (diff > 2) return 'rising';
+  if (diff < -2) return 'falling';
+  return 'steady';
+}
+
+/** Fetch air quality data (free OWM endpoint) */
+async function fetchAirQuality(lat: number, lon: number, apiKey: string): Promise<AirQuality | undefined> {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`
+    );
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    const item = data.list?.[0];
+    if (!item) return undefined;
+    return {
+      aqi: item.main?.aqi ?? 1,
+      co: item.components?.co ?? 0,
+      no2: item.components?.no2 ?? 0,
+      o3: item.components?.o3 ?? 0,
+      pm2_5: item.components?.pm2_5 ?? 0,
+      pm10: item.components?.pm10 ?? 0,
+      so2: item.components?.so2 ?? 0,
+    };
+  } catch {
+    return undefined; // Non-critical — don't fail the whole fetch
+  }
+}
+
 export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherData> {
   const apiKey = resolveApiKey();
   if (!apiKey) {
@@ -121,14 +160,15 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
 
   const { latitude, longitude } = coords;
 
-  // Fetch current weather + 5-day forecast in parallel
-  const [currentRes, forecastRes] = await Promise.all([
+  // Fetch current weather + 5-day forecast + air quality in parallel
+  const [currentRes, forecastRes, airQuality] = await Promise.all([
     fetch(
       `${API_BASE_URL}/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
     ),
     fetch(
       `${API_BASE_URL}/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
     ),
+    fetchAirQuality(latitude, longitude, apiKey),
   ]);
 
   if (!currentRes.ok) {
@@ -172,5 +212,10 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
       lon: longitude,
       name: currentData.name || '',
     },
+    sunriseTime: sunriseISO,
+    sunsetTime: sunsetISO,
+    dataTimestamp: currentData.dt ? currentData.dt * 1000 : Date.now(),
+    pressureTrend: computePressureTrend(forecastItems),
+    airQuality,
   };
 }

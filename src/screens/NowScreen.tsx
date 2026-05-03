@@ -26,9 +26,50 @@ interface NowScreenProps {
   expressiveDescription?: string;
   seasonalColors?: { blobColor1: string; blobColor2: string; accentTint: string };
   onRefresh?: () => void;
+  sunriseTime?: string;
+  sunsetTime?: string;
+  dataTimestamp?: number;
 }
 
-export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh }: NowScreenProps) {
+/** Format a duration in minutes to "Xh Ym" or "Ym" */
+function formatCountdown(mins: number): string {
+  if (mins < 1) return 'now';
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+/** Compute sun countdown text from sunrise/sunset ISO strings */
+function getSunCountdown(sunriseISO?: string, sunsetISO?: string): string | null {
+  if (!sunriseISO || !sunsetISO) return null;
+  const now = Date.now();
+  const sunrise = new Date(sunriseISO).getTime();
+  const sunset = new Date(sunsetISO).getTime();
+  if (isNaN(sunrise) || isNaN(sunset)) return null;
+
+  if (now < sunrise) {
+    const diff = (sunrise - now) / 60000;
+    return `☀ Sunrise in ${formatCountdown(diff)}`;
+  }
+  if (now < sunset) {
+    const diff = (sunset - now) / 60000;
+    return `🌅 Sunset in ${formatCountdown(diff)}`;
+  }
+  return '🌙 Sun has set';
+}
+
+/** Format data freshness from timestamp */
+function getFreshness(ts?: number): string | null {
+  if (!ts) return null;
+  const ago = Math.round((Date.now() - ts) / 60000);
+  if (ago < 1) return 'Updated just now';
+  if (ago === 1) return 'Updated 1 min ago';
+  if (ago < 60) return `Updated ${ago} min ago`;
+  const h = Math.floor(ago / 60);
+  return `Updated ${h}h ago`;
+}
+
+export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh, sunriseTime, sunsetTime, dataTimestamp }: NowScreenProps) {
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -205,6 +246,8 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   const dateStr = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
   const conditionCode = weather?.weatherCode || 1000;
   const condition = WEATHER_CODES[conditionCode] || WEATHER_CODES[1000];
+  const sunCountdown = getSunCountdown(sunriseTime, sunsetTime);
+  const freshness = getFreshness(dataTimestamp);
 
   return (
     <View style={styles.container}>
@@ -354,6 +397,13 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
             {(weather?.rainVolume ?? 0) > 0 && (weather?.snowVolume ?? 0) > 0 ? '  ·  ' : ''}
             {(weather?.snowVolume ?? 0) > 0 ? `❄ ${weather!.snowVolume!.toFixed(1)} mm snow` : ''}
           </Text>
+        )}
+        {(sunCountdown || freshness) && (
+          <View style={styles.metaRow}>
+            {sunCountdown && <Text style={styles.metaText}>{sunCountdown}</Text>}
+            {sunCountdown && freshness && <Text style={styles.metaDot}>·</Text>}
+            {freshness && <Text style={styles.metaText}>{freshness}</Text>}
+          </View>
         )}
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />
@@ -546,6 +596,24 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginTop: 6,
     letterSpacing: 0.5,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  metaText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: theme.colors.muted,
+    letterSpacing: 0.3,
+  },
+  metaDot: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    color: theme.colors.muted,
+    opacity: 0.5,
   },
   pullHint: {
     alignItems: 'center',

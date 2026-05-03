@@ -513,6 +513,9 @@ export default function App(props: { initialLayer?: number }) {
                 expressiveDescription={expressiveDesc}
                 seasonalColors={seasonalColors}
                 onRefresh={handleRefresh}
+                sunriseTime={data?.sunriseTime}
+                sunsetTime={data?.sunsetTime}
+                dataTimestamp={data?.dataTimestamp}
               />
             </ErrorBoundary>
           </Animated.View>
@@ -522,7 +525,12 @@ export default function App(props: { initialLayer?: number }) {
         <View style={{ height: SCREEN_HEIGHT, overflow: 'hidden', backgroundColor: theme.colors.ink }}>
           <Animated.View style={[{ flex: 1 }, layerStyles[1]]}>
             <ErrorBoundary layerName="Atmosphere">
-              <AtmosphereScreen weather={data?.current || null} />
+              <AtmosphereScreen
+                weather={data?.current || null}
+                pressureTrend={data?.pressureTrend}
+                airQuality={data?.airQuality}
+                dataTimestamp={data?.dataTimestamp}
+              />
             </ErrorBoundary>
           </Animated.View>
         </View>
