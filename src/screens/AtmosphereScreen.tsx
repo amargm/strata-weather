@@ -7,10 +7,8 @@ import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface AtmosphereScreenProps {
   weather: WeatherValues | null;
-  pressureTrend?: 'rising' | 'falling' | 'steady';
   airQuality?: AirQuality;
   dataTimestamp?: number;
-  seaLevelPressure?: number;
 }
 
 const AQI_LABELS: Record<number, { label: string; color: string }> = {
@@ -21,16 +19,8 @@ const AQI_LABELS: Record<number, { label: string; color: string }> = {
   5: { label: 'Very Poor', color: '#9c27b0' },
 };
 
-const TREND_ARROW: Record<string, string> = {
-  rising: '↑',
-  falling: '↓',
-  steady: '→',
-};
-
-export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, pressureTrend, airQuality, dataTimestamp, seaLevelPressure }: AtmosphereScreenProps) {
+export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, airQuality, dataTimestamp }: AtmosphereScreenProps) {
   const barAnims = useRef([
-    new Animated.Value(0),
-    new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -49,10 +39,8 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
     const targets = [
       weather.humidity / 100,
       weather.cloudCover / 100,
-      Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
       Math.max(0, Math.min(weather.dewPoint / 40, 1)),
       Math.min((weather.visibility || 0) / 20, 1),
-      Math.min((weather.uvIndex || 0) / 11, 1),
     ];
     if (reduceMotion) {
       barAnims.forEach((anim, i) => anim.setValue(targets[i]));
@@ -64,9 +52,6 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
   }, [weather, reduceMotion]);
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  const uvIndex = weather?.uvIndex ?? 0;
-  const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -106,45 +91,22 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
 
         {/* Row 2 */}
         <MetricCell
-          label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
-          unit="hPa"
-          hint={`Weight of air above you.${pressureTrend === 'falling' ? ' Falling — storms possible.' : pressureTrend === 'rising' ? ' Rising — clearing ahead.' : ' Below 1000 hPa often means storms.'}`}
-          barAnim={barAnims[2]}
-          color={theme.colors.accent}
-          isLeft
-        />
-        <MetricCell
           label="Dew Point"
           value={`${Math.round(weather?.dewPoint ?? 0)}°`}
           unit="°C"
           hint="Air must cool to this temp to form dew. Above 15° feels sticky."
-          barAnim={barAnims[3]}
+          barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
-          isLeft={false}
-          isPro
+          isLeft
         />
-
-        {/* Row 3 */}
         <MetricCell
           label="Visibility"
           value={`${Math.round(weather?.visibility ?? 0)}`}
           unit="km"
           hint="How far you can see clearly right now."
-          barAnim={barAnims[4]}
+          barAnim={barAnims[3]}
           color="rgba(240,235,225,0.4)"
-          isLeft
-        />
-        <MetricCell
-          label="UV Index"
-          value={`${uvIndex}`}
-          unit={uvLabel}
-          hint={uvIndex >= 6 ? 'Wear sunscreen — burns in under 20 min.' : 'Sun exposure is manageable right now.'}
-          barAnim={barAnims[5]}
-          color={theme.colors.accent}
           isLeft={false}
-          valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
-          isPro
         />
       </View>
 
@@ -182,7 +144,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         </View>
       )}
 
-      {/* Wind compass + Sea-level pressure */}
+      {/* Wind compass */}
       {(weather?.windSpeed ?? 0) > 0 && (
         <View style={styles.compassSection}>
           <View style={styles.compassContainer}>
@@ -196,13 +158,6 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
               {getWindDir(weather?.windDirection ?? 0)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
             </Text>
           </View>
-          {seaLevelPressure != null && (
-            <View style={styles.seaLevelBox}>
-              <Text style={styles.seaLevelVal}>{Math.round(seaLevelPressure)}</Text>
-              <Text style={styles.seaLevelUnit}>hPa</Text>
-              <Text style={styles.seaLevelLabel}>Sea Level</Text>
-            </View>
-          )}
         </View>
       )}
 
@@ -516,29 +471,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: 0.3,
   },
-  seaLevelBox: {
-    alignItems: 'center',
-  },
-  seaLevelVal: {
-    fontFamily: theme.fonts.serifBold,
-    fontSize: 22,
-    color: theme.colors.paper,
-  },
-  seaLevelUnit: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.5)',
-    letterSpacing: 0.5,
-  },
-  seaLevelLabel: {
-    fontFamily: theme.fonts.mono,
-    fontSize: 9,
-    color: 'rgba(240,235,225,0.35)',
-    marginTop: 4,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-
   /* ---- AQI section ---- */
   aqiSection: {
     marginHorizontal: sw(22),

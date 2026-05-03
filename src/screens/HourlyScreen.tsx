@@ -264,9 +264,6 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                   <Text style={styles.fcDate}>{formatDate(day.startTime)}</Text>
                 </View>
 
-                {/* Icon */}
-                <Text style={styles.fcIcon} importantForAccessibility="no">{condition.icon}</Text>
-
                 {/* Lo temp */}
                 <Text style={styles.fcLo}>{Math.round(day.values.temperatureMin)}°</Text>
 
@@ -513,11 +510,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: theme.colors.muted,
     marginTop: 1,
-  },
-  fcIcon: {
-    fontSize: 18,
-    width: sw(28),
-    textAlign: 'center',
   },
   fcLo: {
     fontFamily: theme.fonts.mono,

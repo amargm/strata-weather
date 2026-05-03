@@ -6,15 +6,21 @@ import { ProOverlay } from '../components/ProBadge';
 import { useUser } from '../context/UserContext';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
+const TREND_ARROW: Record<string, string> = {
+  rising: '↑',
+  falling: '↓',
+  steady: '→',
+};
+
 interface ScienceScreenProps {
   weather: WeatherValues | null;
   today: DailyInterval | null;
+  pressureTrend?: 'rising' | 'falling' | 'steady';
 }
 
-export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
+export const ScienceScreen = React.memo(function ScienceScreen({ weather, today, pressureTrend }: ScienceScreenProps) {
   const { isPro, isGuest, signOut, showPaywall } = useUser();
   const barAnims = useRef([
-    new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -36,7 +42,6 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
       Math.min(uvIndex / 11, 1),
       Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
       Math.max(0, Math.min((weather.temperatureApparent + 10) / 60, 1)),
-      (weather.humidity ?? 0) / 100,
     ];
     if (reduceMotion) {
       barAnims.forEach((anim, i) => anim.setValue(targets[i]));
@@ -97,9 +102,9 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
         {/* Pressure */}
         <MetricCell
           label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}`}
+          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
           unit="hPa"
-          hint="Weight of air above you. Below 1000 = storms likely."
+          hint={`Weight of air above you.${pressureTrend === 'falling' ? ' Falling — storms possible.' : pressureTrend === 'rising' ? ' Rising — clearing ahead.' : ''}`}
           barAnim={barAnims[1]}
           color={theme.colors.accent2}
           isLeft={false}
@@ -114,16 +119,6 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
           color="rgba(240,235,225,0.4)"
           isLeft
           isPro
-        />
-        {/* Humidity */}
-        <MetricCell
-          label="Humidity"
-          value={`${weather?.humidity ?? 0}`}
-          unit="%"
-          hint="Above 70% feels muggy. Below 30% feels dry."
-          barAnim={barAnims[3]}
-          color={theme.colors.accent2}
-          isLeft={false}
         />
       </View>
 

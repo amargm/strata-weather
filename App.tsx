@@ -558,10 +558,8 @@ export default function App(props: { initialLayer?: number }) {
             <ErrorBoundary layerName="Atmosphere">
               <AtmosphereScreen
                 weather={data?.current || null}
-                pressureTrend={data?.pressureTrend}
                 airQuality={data?.airQuality}
                 dataTimestamp={data?.dataTimestamp}
-                seaLevelPressure={data?.seaLevelPressure}
               />
             </ErrorBoundary>
           </Animated.View>
@@ -587,6 +585,7 @@ export default function App(props: { initialLayer?: number }) {
               <ScienceScreen
                 weather={data?.current || null}
                 today={data?.daily?.[0] || null}
+                pressureTrend={data?.pressureTrend}
               />
             </ErrorBoundary>
           </Animated.View>
