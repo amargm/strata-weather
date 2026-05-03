@@ -9,13 +9,14 @@ interface UseLocationReturn {
   loading: boolean;
 }
 
-export function useLocation(): UseLocationReturn {
+export function useLocation(enabled: boolean = true): UseLocationReturn {
   const [coords, setCoords] = useState<LocationCoords | null>(null);
   const [locationName, setLocationName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!enabled) return;
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -49,7 +50,7 @@ export function useLocation(): UseLocationReturn {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [enabled]);
 
   return { coords, locationName, error, loading };
 }

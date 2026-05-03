@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { theme } from '../utils/theme';
+import { useUser } from '../context/UserContext';
 
 interface ProBadgeProps {
   /** true = dark (ink) background layers, false = light (paper) */
@@ -10,9 +11,14 @@ interface ProBadgeProps {
 
 /**
  * Small "PRO" lock badge overlaid on metrics that require a paid API tier.
- * Tapping navigates to upgrade flow (when wired).
+ * Auto-wires to UserContext paywall when no explicit onPress provided.
+ * Returns null if user is Pro (no badge needed).
  */
 export function ProBadge({ dark = true, onPress }: ProBadgeProps) {
+  const { isPro, showPaywall } = useUser();
+  if (isPro) return null;
+
+  const handlePress = onPress || showPaywall;
   const badge = (
     <View style={[styles.badge, dark ? styles.badgeDark : styles.badgeLight]}>
       <Text style={[styles.lock, dark ? styles.lockDark : styles.lockLight]}>🔒</Text>
@@ -20,29 +26,33 @@ export function ProBadge({ dark = true, onPress }: ProBadgeProps) {
     </View>
   );
 
-  if (onPress) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7} accessible accessibilityRole="button" accessibilityLabel="Upgrade to Pro to unlock this feature">
-        {badge}
-      </TouchableOpacity>
-    );
-  }
-  return badge;
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.7} accessible accessibilityRole="button" accessibilityLabel="Upgrade to Pro to unlock this feature">
+      {badge}
+    </TouchableOpacity>
+  );
 }
 
 /**
  * Full-cell overlay that dims the value and shows a centered PRO badge.
  * Wrap around the cell content.
+ * Returns just children if user is Pro (no overlay).
  */
 export function ProOverlay({ dark = true, children, onPress }: ProBadgeProps & { children: React.ReactNode }) {
+  const { isPro, showPaywall } = useUser();
+  if (isPro) return <>{children}</>;
+
+  const handlePress = onPress || showPaywall;
   return (
     <View style={styles.overlayWrap}>
       <View style={styles.dimmed}>{children}</View>
       <View style={styles.overlayCentre}>
-        <ProBadge dark={dark} onPress={onPress} />
-        <Text style={[styles.upgradeHint, dark ? styles.upgradeHintDark : styles.upgradeHintLight]}>
-          Upgrade to Pro
-        </Text>
+        <ProBadge dark={dark} onPress={handlePress} />
+        <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
+          <Text style={[styles.upgradeHint, dark ? styles.upgradeHintDark : styles.upgradeHintLight]}>
+            Upgrade to Pro
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

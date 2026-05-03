@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, Toucha
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
 import { ProOverlay } from '../components/ProBadge';
+import { useUser } from '../context/UserContext';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
 
 interface ScienceScreenProps {
@@ -11,6 +12,7 @@ interface ScienceScreenProps {
 }
 
 export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
+  const { isPro, signOut, showPaywall } = useUser();
   const barAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -143,6 +145,32 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
             <Text style={[styles.sunVal, { color: 'rgba(240,200,80,0.9)' }]}>{daylightStr}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Account actions */}
+      <View style={styles.accountRow}>
+        {!isPro && (
+          <TouchableOpacity
+            style={styles.upgradeBtn}
+            onPress={showPaywall}
+            activeOpacity={0.7}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Upgrade to Pro"
+          >
+            <Text style={styles.upgradeBtnText}>Upgrade to Pro</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={signOut}
+          activeOpacity={0.6}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+        >
+          <Text style={styles.closeBtnText}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Close app */}
@@ -337,7 +365,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     alignSelf: 'center',
-    marginTop: 28,
+    marginTop: 12,
     marginBottom: 12,
     paddingVertical: 10,
     paddingHorizontal: 28,
@@ -351,5 +379,35 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.45)',
+  },
+  accountRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 28,
+    paddingHorizontal: sw(22),
+  },
+  upgradeBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 4,
+    backgroundColor: 'rgba(196,65,28,0.15)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(196,65,28,0.35)',
+  },
+  upgradeBtnText: {
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: theme.colors.accent,
+  },
+  signOutBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(240,235,225,0.15)',
   },
 });

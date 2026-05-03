@@ -49,6 +49,8 @@ import { WeatherEffects } from './src/components/WeatherEffects';
 import { getExpressiveDescription, getSeasonalColors } from './src/utils/weatherPoetry';
 import { LoadingScreen } from './src/components/LoadingScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { PaywallModal } from './src/components/PaywallModal';
+import { UserProvider, AuthState } from './src/context/UserContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -99,11 +101,19 @@ export default function App(props: { initialLayer?: number }) {
   });
 
   // --- Auth gate ---
-  const [authState, setAuthState] = useState<'loading' | 'none' | 'signed_in' | 'guest'>('loading');
+  const [authState, setAuthState] = useState<AuthState>('loading');
+  const [paywallVisible, setPaywallVisible] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(AUTH_KEY).then(val => {
-      setAuthState((val as 'signed_in' | 'guest') || 'none');
+      // Validate stored value — only accept known states
+      if (val === 'signed_in' || val === 'guest') {
+        setAuthState(val);
+      } else {
+        // Unknown/corrupted value → force re-auth
+        if (val != null) AsyncStorage.removeItem(AUTH_KEY);
+        setAuthState('none');
+      }
     });
   }, []);
 
@@ -118,7 +128,35 @@ export default function App(props: { initialLayer?: number }) {
     setAuthState('guest');
   }, []);
 
-  const { coords, locationName, loading: locLoading } = useLocation();
+  const handleSignOut = useCallback(() => {
+    AsyncStorage.removeItem(AUTH_KEY);
+    setAuthState('none');
+  }, []);
+
+  const handleShowPaywall = useCallback(() => {
+    setPaywallVisible(true);
+  }, []);
+
+  const handleUpgrade = useCallback(() => {
+    // Dummy upgrade: promote guest → signed_in (pro)
+    AsyncStorage.setItem(AUTH_KEY, 'signed_in');
+    setAuthState('signed_in');
+    setPaywallVisible(false);
+  }, []);
+
+  const isPro = authState === 'signed_in';
+  const authPassed = authState === 'signed_in' || authState === 'guest';
+
+  // UserContext value — memoized to avoid re-renders
+  const userContextValue = useMemo(() => ({
+    authState,
+    isPro,
+    showPaywall: handleShowPaywall,
+    signOut: handleSignOut,
+  }), [authState, isPro, handleShowPaywall, handleSignOut]);
+
+  // Only request location after auth is resolved (privacy: don't ask before user consents)
+  const { coords, locationName, loading: locLoading } = useLocation(authPassed);
   const { data, loading: weatherLoading, error, refresh } = useWeather(coords);
 
   // --- Loading tip rotation ---
@@ -442,6 +480,7 @@ export default function App(props: { initialLayer?: number }) {
   const lowTemp = data?.daily?.[0]?.values?.temperatureMin;
 
   return (
+    <UserProvider value={userContextValue}>
     <View style={styles.root}>
       <StatusBar
         barStyle={DARK_LAYERS.has(currentLayer) ? 'light-content' : 'dark-content'}
@@ -540,7 +579,15 @@ export default function App(props: { initialLayer?: number }) {
         </RNAnimated.View>
       )}
 
+      {/* Paywall modal */}
+      <PaywallModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        onUpgrade={handleUpgrade}
+      />
+
     </View>
+    </UserProvider>
   );
 }
 
