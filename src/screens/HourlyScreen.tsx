@@ -13,7 +13,7 @@ import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
-const ITEM_WIDTH = sw(64);
+const ITEM_WIDTH = sw(72);
 
 /** Generate a poetic forecast summary from hourly + daily data */
 function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]): string {
@@ -354,19 +354,19 @@ const styles = StyleSheet.create({
 
   /* --- Tape --- */
   tapeSection: {
-    paddingBottom: sh(4),
+    paddingBottom: sh(8),
   },
   tape: {
     paddingHorizontal: sw(20),
   },
   tapeContent: {
-    gap: sw(4),
+    gap: sw(6),
     paddingRight: sw(20),
   },
   tapeItem: {
     width: ITEM_WIDTH,
     alignItems: 'center',
-    paddingVertical: sh(12),
+    paddingVertical: sh(16),
     borderRadius: 0,
     backgroundColor: 'rgba(15,14,12,0.04)',
     borderWidth: 1,
@@ -396,15 +396,15 @@ const styles = StyleSheet.create({
   },
   tapeTemp: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(18),
+    fontSize: ms(20),
     color: theme.colors.ink,
-    marginTop: 5,
+    marginTop: 6,
   },
   tapeTextLight: {
     color: theme.colors.paper,
   },
   tapeCond: {
-    fontSize: 24,
+    fontSize: 26,
   },
   tapePrecip: {
     fontFamily: theme.fonts.mono,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   /* --- Section break --- */
   sectionBreak: {
     alignItems: 'center',
-    paddingVertical: sh(10),
+    paddingVertical: sh(14),
   },
   breakLine: {
     width: sw(32),
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: sh(8),
+    marginBottom: sh(12),
     paddingHorizontal: sw(6),
   },
   forecastTitle: {
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: sh(10),
+    paddingVertical: sh(13),
     paddingHorizontal: sw(6),
     borderBottomWidth: 0.5,
     borderBottomColor: theme.colors.faint,
@@ -494,11 +494,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   dayCol: {
-    width: sw(56),
+    width: sw(60),
   },
   fcDay: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(13),
+    fontSize: ms(14),
     color: theme.colors.ink,
   },
   fcDayToday: {
@@ -506,24 +506,24 @@ const styles = StyleSheet.create({
   },
   fcDate: {
     fontFamily: theme.fonts.mono,
-    fontSize: 7,
+    fontSize: 8,
     letterSpacing: 0.5,
     color: theme.colors.muted,
-    marginTop: 1,
+    marginTop: 2,
   },
   fcLo: {
     fontFamily: theme.fonts.mono,
-    fontSize: 11,
+    fontSize: 12,
     color: theme.colors.accent2,
-    width: sw(30),
+    width: sw(32),
     textAlign: 'right',
-    marginRight: sw(6),
+    marginRight: sw(8),
   },
   barCol: {
     flex: 1,
   },
   barTrack: {
-    height: 4,
+    height: 5,
     borderRadius: 0,
     backgroundColor: theme.colors.faint,
     position: 'relative',
@@ -538,11 +538,11 @@ const styles = StyleSheet.create({
   },
   fcHi: {
     fontFamily: theme.fonts.serifBlack,
-    fontSize: ms(13),
+    fontSize: ms(14),
     color: theme.colors.accent,
-    width: sw(30),
+    width: sw(32),
     textAlign: 'left',
-    marginLeft: sw(6),
+    marginLeft: sw(8),
   },
   precipCol: {
     width: sw(34),
