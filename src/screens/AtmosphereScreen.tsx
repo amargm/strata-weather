@@ -10,6 +10,7 @@ interface AtmosphereScreenProps {
   pressureTrend?: 'rising' | 'falling' | 'steady';
   airQuality?: AirQuality;
   dataTimestamp?: number;
+  seaLevelPressure?: number;
 }
 
 const AQI_LABELS: Record<number, { label: string; color: string }> = {
@@ -26,7 +27,7 @@ const TREND_ARROW: Record<string, string> = {
   steady: '→',
 };
 
-export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, pressureTrend, airQuality, dataTimestamp }: AtmosphereScreenProps) {
+export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, pressureTrend, airQuality, dataTimestamp, seaLevelPressure }: AtmosphereScreenProps) {
   const barAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -178,6 +179,30 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
               <Text style={styles.dataChipLabel}>OWM Desc</Text>
             </View>
           ) : null}
+        </View>
+      )}
+
+      {/* Wind compass + Sea-level pressure */}
+      {(weather?.windSpeed ?? 0) > 0 && (
+        <View style={styles.compassSection}>
+          <View style={styles.compassContainer}>
+            <View style={styles.compassRing}>
+              <Text style={styles.compassN}>N</Text>
+              <View style={[styles.compassNeedle, { transform: [{ rotate: `${weather?.windDirection ?? 0}deg` }] }]}>
+                <View style={styles.needleArrow} />
+              </View>
+            </View>
+            <Text style={styles.compassLabel}>
+              {getWindDir(weather?.windDirection ?? 0)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
+            </Text>
+          </View>
+          {seaLevelPressure != null && (
+            <View style={styles.seaLevelBox}>
+              <Text style={styles.seaLevelVal}>{Math.round(seaLevelPressure)}</Text>
+              <Text style={styles.seaLevelUnit}>hPa</Text>
+              <Text style={styles.seaLevelLabel}>Sea Level</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -435,6 +460,82 @@ const styles = StyleSheet.create({
     color: 'rgba(240,235,225,0.45)',
     letterSpacing: 0.5,
     marginTop: 2,
+    textTransform: 'uppercase',
+  },
+
+  /* ---- Wind compass ---- */
+  compassSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginHorizontal: sw(22),
+    marginTop: 24,
+    backgroundColor: 'rgba(240,235,225,0.06)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  compassContainer: {
+    alignItems: 'center',
+  },
+  compassRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1.5,
+    borderColor: 'rgba(240,235,225,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compassN: {
+    position: 'absolute',
+    top: 2,
+    fontFamily: theme.fonts.monoBold,
+    fontSize: 8,
+    color: theme.colors.paper,
+    opacity: 0.6,
+  },
+  compassNeedle: {
+    width: 2,
+    height: 28,
+    alignItems: 'center',
+  },
+  needleArrow: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderBottomWidth: 14,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: theme.colors.accent,
+  },
+  compassLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.6)',
+    marginTop: 8,
+    letterSpacing: 0.3,
+  },
+  seaLevelBox: {
+    alignItems: 'center',
+  },
+  seaLevelVal: {
+    fontFamily: theme.fonts.serifBold,
+    fontSize: 22,
+    color: theme.colors.paper,
+  },
+  seaLevelUnit: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.5)',
+    letterSpacing: 0.5,
+  },
+  seaLevelLabel: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    color: 'rgba(240,235,225,0.35)',
+    marginTop: 4,
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
 

@@ -1,5 +1,5 @@
 import { API_BASE_URL, owmToInternalCode } from '../utils/constants';
-import { WeatherData, WeatherValues, TimelineInterval, DailyInterval, DailyValues, LocationCoords, AirQuality } from '../types/weather';
+import { WeatherData, WeatherValues, TimelineInterval, DailyInterval, DailyValues, LocationCoords, AirQuality, GeocodingResult } from '../types/weather';
 import { NativeModules, Platform } from 'react-native';
 
 // API key — hardcoded for now, move to env/native module for production
@@ -152,6 +152,59 @@ async function fetchAirQuality(lat: number, lon: number, apiKey: string): Promis
   }
 }
 
+/** Derive comfort index from temperature delta + humidity */
+function computeComfortIndex(temp: number, feelsLike: number, humidity: number): 'Comfortable' | 'Muggy' | 'Dry' | 'Hot' | 'Cold' {
+  if (temp > 35 || feelsLike > 38) return 'Hot';
+  if (temp < 5 || feelsLike < 2) return 'Cold';
+  if (humidity > 70 && temp > 25) return 'Muggy';
+  if (humidity < 30) return 'Dry';
+  return 'Comfortable';
+}
+
+/** Compute outdoor activity score 0-10 from weather conditions */
+function computeOutdoorScore(weather: WeatherValues): number {
+  let score = 10;
+  // Rain penalty
+  if (weather.precipitationProbability > 60) score -= 3;
+  else if (weather.precipitationProbability > 30) score -= 1;
+  // Wind penalty
+  const windKmh = weather.windSpeed * 3.6;
+  if (windKmh > 40) score -= 3;
+  else if (windKmh > 25) score -= 1;
+  // Temperature penalty (too hot or cold)
+  if (weather.temperature > 38 || weather.temperature < 0) score -= 3;
+  else if (weather.temperature > 34 || weather.temperature < 5) score -= 1;
+  // Visibility penalty
+  if (weather.visibility < 1) score -= 2;
+  else if (weather.visibility < 5) score -= 1;
+  // UV penalty
+  if (weather.uvIndex > 10) score -= 1;
+  return Math.max(0, Math.min(10, score));
+}
+
+/** Search cities via OWM Geocoding API */
+export async function searchCities(query: string): Promise<GeocodingResult[]> {
+  const apiKey = resolveApiKey();
+  if (!apiKey || !query.trim()) return [];
+  const encoded = encodeURIComponent(query.trim());
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/geo/1.0/direct?q=${encoded}&limit=5&appid=${apiKey}`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data || []).map((item: any) => ({
+      name: item.name ?? '',
+      lat: item.lat ?? 0,
+      lon: item.lon ?? 0,
+      country: item.country ?? '',
+      state: item.state,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherData> {
   const apiKey = resolveApiKey();
   if (!apiKey) {
@@ -217,5 +270,11 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
     dataTimestamp: currentData.dt ? currentData.dt * 1000 : Date.now(),
     pressureTrend: computePressureTrend(forecastItems),
     airQuality,
+    timezoneOffset: currentData.timezone ?? 0,
+    cityTempMin: currentData.main?.temp_min,
+    cityTempMax: currentData.main?.temp_max,
+    seaLevelPressure: currentData.main?.sea_level ?? currentData.main?.pressure,
+    comfortIndex: computeComfortIndex(current.temperature, current.temperatureApparent, current.humidity),
+    outdoorScore: computeOutdoorScore(current),
   };
 }

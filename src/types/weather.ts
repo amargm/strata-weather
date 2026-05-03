@@ -65,9 +65,23 @@ export interface WeatherData {
   dataTimestamp?: number;
   pressureTrend?: 'rising' | 'falling' | 'steady';
   airQuality?: AirQuality;
+  timezoneOffset?: number; // seconds offset from UTC
+  cityTempMin?: number;
+  cityTempMax?: number;
+  seaLevelPressure?: number;
+  comfortIndex?: 'Comfortable' | 'Muggy' | 'Dry' | 'Hot' | 'Cold';
+  outdoorScore?: number; // 0-10
 }
 
 export interface LocationCoords {
   latitude: number;
   longitude: number;
+}
+
+export interface GeocodingResult {
+  name: string;
+  lat: number;
+  lon: number;
+  country: string;
+  state?: string;
 }

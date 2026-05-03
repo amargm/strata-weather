@@ -29,6 +29,14 @@ interface NowScreenProps {
   sunriseTime?: string;
   sunsetTime?: string;
   dataTimestamp?: number;
+  comfortIndex?: string;
+  outdoorScore?: number;
+  timezoneOffset?: number;
+  cityTempMin?: number;
+  cityTempMax?: number;
+  onCitySearch?: () => void;
+  isCustomLocation?: boolean;
+  onResetLocation?: () => void;
 }
 
 /** Format a duration in minutes to "Xh Ym" or "Ym" */
@@ -69,7 +77,7 @@ function getFreshness(ts?: number): string | null {
   return `Updated ${h}h ago`;
 }
 
-export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh, sunriseTime, sunsetTime, dataTimestamp }: NowScreenProps) {
+export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh, sunriseTime, sunsetTime, dataTimestamp, comfortIndex, outdoorScore, timezoneOffset, cityTempMin, cityTempMax, onCitySearch, isCustomLocation, onResetLocation }: NowScreenProps) {
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -249,6 +257,18 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   const sunCountdown = getSunCountdown(sunriseTime, sunsetTime);
   const freshness = getFreshness(dataTimestamp);
 
+  // Local time at location
+  const localTimeStr = React.useMemo(() => {
+    if (timezoneOffset == null) return null;
+    const utcMs = Date.now() + (now.getTimezoneOffset() * 60000);
+    const localMs = utcMs + (timezoneOffset * 1000);
+    const localDate = new Date(localMs);
+    const h = localDate.getHours();
+    const m = localDate.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${m.toString().padStart(2, '0')} ${ampm} local`;
+  }, [timezoneOffset]);
+
   return (
     <View style={styles.container}>
       {/* Weather effects overlay */}
@@ -289,8 +309,16 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       <View style={styles.topBar} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 00 · Now</Text>
-          <Text style={styles.locationLine}>📍 Current location</Text>
+          <TouchableOpacity onPress={onCitySearch} activeOpacity={0.7} style={styles.locationRow}>
+            <Text style={styles.locationLine}>{isCustomLocation ? '📌' : '📍'} {isCustomLocation ? 'Custom' : 'Current location'}</Text>
+            <Text style={styles.searchIcon}>🔍</Text>
+          </TouchableOpacity>
           <Text style={styles.locationName} accessibilityRole="text">{locationName || 'Loading...'}</Text>
+          {isCustomLocation && onResetLocation && (
+            <TouchableOpacity onPress={onResetLocation} activeOpacity={0.7}>
+              <Text style={styles.resetLink}>↩ Use my location</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.topRight}>
           <Text style={styles.dateStamp} accessibilityLabel={`Date: ${dateStr}`}>{dateStr}</Text>
@@ -405,6 +433,20 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
             {freshness && <Text style={styles.metaText}>{freshness}</Text>}
           </View>
         )}
+        {(comfortIndex || outdoorScore != null || localTimeStr || cityTempMin != null) && (
+          <View style={styles.metaRow}>
+            {outdoorScore != null && <Text style={styles.metaText}>🏃 {outdoorScore}/10</Text>}
+            {comfortIndex && <Text style={styles.metaDot}>·</Text>}
+            {comfortIndex && <Text style={styles.metaText}>{comfortIndex}</Text>}
+            {localTimeStr && <Text style={styles.metaDot}>·</Text>}
+            {localTimeStr && <Text style={styles.metaText}>{localTimeStr}</Text>}
+          </View>
+        )}
+        {(cityTempMin != null && cityTempMax != null) && (
+          <Text style={styles.metaText}>
+            City range: {Math.round(cityTempMin!)}°–{Math.round(cityTempMax!)}°
+          </Text>
+        )}
         <View style={styles.pullHint}>
           <View style={styles.pullHintLine} />
           <Text style={styles.pullHintText}>Swipe to explore</Text>
@@ -457,12 +499,28 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginBottom: 6,
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   locationLine: {
     fontFamily: theme.fonts.mono,
     fontSize: 10,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
     color: theme.colors.muted,
+  },
+  searchIcon: {
+    fontSize: 11,
+    opacity: 0.6,
+  },
+  resetLink: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 9,
+    color: theme.colors.accent2,
+    marginTop: 3,
+    letterSpacing: 0.3,
   },
   locationName: {
     fontFamily: theme.fonts.serifBlack,

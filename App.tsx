@@ -50,6 +50,7 @@ import { getExpressiveDescription, getSeasonalColors } from './src/utils/weather
 import { LoadingScreen } from './src/components/LoadingScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { PaywallModal } from './src/components/PaywallModal';
+import { CitySearchModal } from './src/components/CitySearchModal';
 import { UserProvider, AuthState } from './src/context/UserContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -157,7 +158,16 @@ export default function App(props: { initialLayer?: number }) {
 
   // Only request location after auth is resolved (privacy: don't ask before user consents)
   const { coords, locationName, loading: locLoading } = useLocation(authPassed);
-  const { data, loading: weatherLoading, error, refresh } = useWeather(coords);
+
+  // City search override
+  const [customCoords, setCustomCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [customCityName, setCustomCityName] = useState<string | null>(null);
+  const [citySearchVisible, setCitySearchVisible] = useState(false);
+
+  const effectiveCoords = customCoords || coords;
+  const effectiveLocationName = customCityName || locationName;
+
+  const { data, loading: weatherLoading, error, refresh } = useWeather(effectiveCoords);
 
   // --- Loading tip rotation ---
   const [tipIndex, setTipIndex] = useState(0);
@@ -217,7 +227,7 @@ export default function App(props: { initialLayer?: number }) {
 
   // --- Sync weather data to Android widget ---
   useEffect(() => {
-    if (!data?.current || !coords || Platform.OS !== 'android') return;
+    if (!data?.current || !effectiveCoords || Platform.OS !== 'android') return;
     try {
       const w = data.current;
       const code = w.weatherCode || 1000;
@@ -226,7 +236,7 @@ export default function App(props: { initialLayer?: number }) {
       const loTemp = data.daily?.[0]?.values?.temperatureMin ?? w.temperature - 2;
 
       NativeModules.AppConfig?.saveWidgetData(
-        locationName || 'Unknown',
+        effectiveLocationName || 'Unknown',
         w.temperature || 0,
         w.temperatureApparent || 0,
         hiTemp,
@@ -237,13 +247,13 @@ export default function App(props: { initialLayer?: number }) {
         w.precipitationProbability || 0,
         code,
         condition,
-        coords.latitude,
-        coords.longitude,
+        effectiveCoords.latitude,
+        effectiveCoords.longitude,
       );
     } catch (e) {
       // Widget sync is non-critical
     }
-  }, [data, locationName, coords]);
+  }, [data, effectiveLocationName, effectiveCoords]);
 
   // --- Scroll + layer state ---
   const scrollY = useSharedValue(0);
@@ -421,6 +431,17 @@ export default function App(props: { initialLayer?: number }) {
     refresh();
   }, [refresh]);
 
+  const handleCitySelect = useCallback((city: { name: string; lat: number; lon: number; country: string; state?: string }) => {
+    setCustomCoords({ latitude: city.lat, longitude: city.lon });
+    setCustomCityName(`${city.name}${city.state ? ', ' + city.state : ''}`);
+    setCitySearchVisible(false);
+  }, []);
+
+  const handleResetLocation = useCallback(() => {
+    setCustomCoords(null);
+    setCustomCityName(null);
+  }, []);
+
   // --- Show splash while fonts load ---
   if (!fontsLoaded || authState === 'loading') {
     return (
@@ -507,7 +528,7 @@ export default function App(props: { initialLayer?: number }) {
             <ErrorBoundary layerName="Now">
               <NowScreen
                 weather={data?.current || null}
-                locationName={locationName}
+                locationName={effectiveLocationName}
                 highTemp={highTemp}
                 lowTemp={lowTemp}
                 expressiveDescription={expressiveDesc}
@@ -516,6 +537,14 @@ export default function App(props: { initialLayer?: number }) {
                 sunriseTime={data?.sunriseTime}
                 sunsetTime={data?.sunsetTime}
                 dataTimestamp={data?.dataTimestamp}
+                comfortIndex={data?.comfortIndex}
+                outdoorScore={data?.outdoorScore}
+                timezoneOffset={data?.timezoneOffset}
+                cityTempMin={data?.cityTempMin}
+                cityTempMax={data?.cityTempMax}
+                onCitySearch={() => setCitySearchVisible(true)}
+                isCustomLocation={!!customCoords}
+                onResetLocation={handleResetLocation}
               />
             </ErrorBoundary>
           </Animated.View>
@@ -530,6 +559,7 @@ export default function App(props: { initialLayer?: number }) {
                 pressureTrend={data?.pressureTrend}
                 airQuality={data?.airQuality}
                 dataTimestamp={data?.dataTimestamp}
+                seaLevelPressure={data?.seaLevelPressure}
               />
             </ErrorBoundary>
           </Animated.View>
@@ -592,6 +622,13 @@ export default function App(props: { initialLayer?: number }) {
         visible={paywallVisible}
         onClose={() => setPaywallVisible(false)}
         onUpgrade={handleUpgrade}
+      />
+
+      {/* City search modal */}
+      <CitySearchModal
+        visible={citySearchVisible}
+        onClose={() => setCitySearchVisible(false)}
+        onSelect={handleCitySelect}
       />
 
     </View>

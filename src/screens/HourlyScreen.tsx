@@ -182,18 +182,24 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             return (
               <View
                 key={item.startTime}
-                style={[styles.tapeItem, isNow && styles.tapeItemNow]}
+                style={[styles.tapeItem, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${precip} percent precipitation chance`}
+                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${precip} percent precipitation chance${item.values.isNight ? ', nighttime' : ''}`}
               >
                 <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                   {formatHour(item.startTime, index)}
                 </Text>
+                {item.values.isNight && !isNow && <Text style={styles.tapeNightIcon}>🌙</Text>}
                 <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
                 <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                   {Math.round(item.values.temperature)}°
                 </Text>
+                {precip > 0 && (
+                  <View style={styles.tapePrecipBar}>
+                    <View style={[styles.tapePrecipFill, { height: `${Math.min(precip, 100)}%` }]} />
+                  </View>
+                )}
                 {precip > 0 && (
                   <Text style={[styles.tapePrecip, isNow && styles.tapePrecipLight]}>
                     💧{precip}%
@@ -370,6 +376,14 @@ const styles = StyleSheet.create({
   tapeItemNow: {
     backgroundColor: theme.colors.ink,
   },
+  tapeItemNight: {
+    backgroundColor: 'rgba(15,14,12,0.07)',
+  },
+  tapeNightIcon: {
+    fontSize: 10,
+    marginBottom: 2,
+    opacity: 0.6,
+  },
   tapeHr: {
     fontFamily: theme.fonts.mono,
     fontSize: 9,
@@ -394,7 +408,21 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     fontSize: 8,
     color: theme.colors.accent2,
-    marginTop: 5,
+    marginTop: 3,
+  },
+  tapePrecipBar: {
+    width: 4,
+    height: 20,
+    backgroundColor: 'rgba(28,93,196,0.15)',
+    borderRadius: 2,
+    marginTop: 4,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  tapePrecipFill: {
+    width: '100%',
+    backgroundColor: theme.colors.accent2,
+    borderRadius: 2,
   },
   tapePrecipLight: {
     color: 'rgba(240,235,225,0.55)',
