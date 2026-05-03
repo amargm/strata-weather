@@ -26,7 +26,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View style={styles.container}>
-          <Text style={styles.icon}>⚠</Text>
+          <Text style={styles.icon}>!</Text>
           <Text style={styles.title}>Something went wrong</Text>
           <Text style={styles.subtitle}>
             {this.props.layerName ? `Layer "${this.props.layerName}" encountered an error.` : 'An error occurred.'}

@@ -28,11 +28,11 @@ export function PaywallModal({ visible, onClose, onUpgrade }: PaywallModalProps)
 
           {/* Feature list */}
           <View style={styles.features}>
-            <FeatureRow icon="☀" label="UV Index" desc="Real-time sun exposure data" />
-            <FeatureRow icon="💧" label="Dew Point" desc="Accurate moisture & comfort levels" />
-            <FeatureRow icon="⏱" label="Hourly Forecast" desc="True hour-by-hour predictions" />
-            <FeatureRow icon="⚡" label="Weather Alerts" desc="Severe weather notifications" />
-            <FeatureRow icon="📊" label="Historical Data" desc="Compare today with past trends" />
+            <FeatureRow icon="UV" label="UV Index" desc="Real-time sun exposure data" />
+            <FeatureRow icon="DP" label="Dew Point" desc="Accurate moisture & comfort levels" />
+            <FeatureRow icon="HR" label="Hourly Forecast" desc="True hour-by-hour predictions" />
+            <FeatureRow icon="AL" label="Weather Alerts" desc="Severe weather notifications" />
+            <FeatureRow icon="HI" label="Historical Data" desc="Compare today with past trends" />
           </View>
 
           {/* CTA */}

@@ -6,6 +6,8 @@ interface UserContextValue {
   authState: AuthState;
   /** true when user has paid/pro access (signed_in). false for guests. */
   isPro: boolean;
+  /** true when user is a guest (not signed in) */
+  isGuest: boolean;
   /** Show the paywall modal */
   showPaywall: () => void;
   /** Sign out and return to auth screen */
@@ -15,6 +17,7 @@ interface UserContextValue {
 const UserContext = createContext<UserContextValue>({
   authState: 'loading',
   isPro: false,
+  isGuest: false,
   showPaywall: () => {},
   signOut: () => {},
 });

@@ -57,13 +57,13 @@ function getSunCountdown(sunriseISO?: string, sunsetISO?: string): string | null
 
   if (now < sunrise) {
     const diff = (sunrise - now) / 60000;
-    return `☀ Sunrise in ${formatCountdown(diff)}`;
+    return `Sunrise in ${formatCountdown(diff)}`;
   }
   if (now < sunset) {
     const diff = (sunset - now) / 60000;
-    return `🌅 Sunset in ${formatCountdown(diff)}`;
+    return `Sunset in ${formatCountdown(diff)}`;
   }
-  return '🌙 Sun has set';
+  return 'Sun has set';
 }
 
 /** Format data freshness from timestamp */
@@ -86,8 +86,8 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   }, []);
 
   const tempAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(40)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Breathing ink wash blobs
   const blob1Anim = useRef(new Animated.Value(0)).current;
@@ -96,12 +96,12 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
   const blob2Drift = useRef(new Animated.Value(0)).current;
 
   // Live strip stagger entrance
-  const liveItem1 = useRef(new Animated.Value(0)).current;
-  const liveItem2 = useRef(new Animated.Value(0)).current;
-  const liveItem3 = useRef(new Animated.Value(0)).current;
+  const liveItem1 = useRef(new Animated.Value(1)).current;
+  const liveItem2 = useRef(new Animated.Value(1)).current;
+  const liveItem3 = useRef(new Animated.Value(1)).current;
 
   // Footer entrance
-  const footerFade = useRef(new Animated.Value(0)).current;
+  const footerFade = useRef(new Animated.Value(1)).current;
 
   // Refresh animation state
   const [refreshing, setRefreshing] = useState(false);
@@ -310,8 +310,8 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         <View>
           <Text style={styles.eyebrow}>Layer 00 · Now</Text>
           <TouchableOpacity onPress={onCitySearch} activeOpacity={0.7} style={styles.locationRow}>
-            <Text style={styles.locationLine}>{isCustomLocation ? '📌' : '📍'} {isCustomLocation ? 'Custom' : 'Current location'}</Text>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Text style={styles.locationLine}>{isCustomLocation ? '▸' : '▹'} {isCustomLocation ? 'Custom' : 'Current location'}</Text>
+            <Text style={styles.searchIcon}>↗</Text>
           </TouchableOpacity>
           <Text style={styles.locationName} accessibilityRole="text">{locationName || 'Loading...'}</Text>
           {isCustomLocation && onResetLocation && (
@@ -421,9 +421,9 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         </Text>
         {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0) && (
           <Text style={styles.precipNote}>
-            {(weather?.rainVolume ?? 0) > 0 ? `🌧 ${weather!.rainVolume!.toFixed(1)} mm rain` : ''}
+            {(weather?.rainVolume ?? 0) > 0 ? `Rain ${weather!.rainVolume!.toFixed(1)} mm` : ''}
             {(weather?.rainVolume ?? 0) > 0 && (weather?.snowVolume ?? 0) > 0 ? '  ·  ' : ''}
-            {(weather?.snowVolume ?? 0) > 0 ? `❄ ${weather!.snowVolume!.toFixed(1)} mm snow` : ''}
+            {(weather?.snowVolume ?? 0) > 0 ? `Snow ${weather!.snowVolume!.toFixed(1)} mm` : ''}
           </Text>
         )}
         {(sunCountdown || freshness) && (
@@ -435,7 +435,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         )}
         {(comfortIndex || outdoorScore != null || localTimeStr || cityTempMin != null) && (
           <View style={styles.metaRow}>
-            {outdoorScore != null && <Text style={styles.metaText}>🏃 {outdoorScore}/10</Text>}
+            {outdoorScore != null && <Text style={styles.metaText}>Outdoor {outdoorScore}/10</Text>}
             {comfortIndex && <Text style={styles.metaDot}>·</Text>}
             {comfortIndex && <Text style={styles.metaText}>{comfortIndex}</Text>}
             {localTimeStr && <Text style={styles.metaDot}>·</Text>}

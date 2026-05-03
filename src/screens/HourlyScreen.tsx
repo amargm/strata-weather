@@ -190,7 +190,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                   {formatHour(item.startTime, index)}
                 </Text>
-                {item.values.isNight && !isNow && <Text style={styles.tapeNightIcon}>🌙</Text>}
+                {item.values.isNight && !isNow && <Text style={styles.tapeNightIcon}>○</Text>}
                 <Text style={styles.tapeCond} importantForAccessibility="no">{condition.icon}</Text>
                 <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                   {Math.round(item.values.temperature)}°
@@ -202,7 +202,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 )}
                 {precip > 0 && (
                   <Text style={[styles.tapePrecip, isNow && styles.tapePrecipLight]}>
-                    💧{precip}%
+                    {precip}%
                   </Text>
                 )}
               </View>
@@ -294,7 +294,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 {/* Precip */}
                 <View style={styles.precipCol}>
                   {precip > 0 ? (
-                    <Text style={styles.fcPrecip}>💧{precip}%</Text>
+                    <Text style={styles.fcPrecip}>{precip}%</Text>
                   ) : null}
                 </View>
               </Animated.View>
@@ -370,14 +370,18 @@ const styles = StyleSheet.create({
     width: ITEM_WIDTH,
     alignItems: 'center',
     paddingVertical: sh(12),
-    borderRadius: 12,
-    backgroundColor: 'rgba(15,14,12,0.03)',
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0.5,
+    borderColor: theme.colors.faint,
   },
   tapeItemNow: {
     backgroundColor: theme.colors.ink,
+    borderColor: theme.colors.ink,
   },
   tapeItemNight: {
-    backgroundColor: 'rgba(15,14,12,0.07)',
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(15,14,12,0.15)',
   },
   tapeNightIcon: {
     fontSize: 10,
@@ -413,8 +417,8 @@ const styles = StyleSheet.create({
   tapePrecipBar: {
     width: 4,
     height: 20,
-    backgroundColor: 'rgba(28,93,196,0.15)',
-    borderRadius: 2,
+    backgroundColor: 'rgba(28,93,196,0.1)',
+    borderRadius: 0,
     marginTop: 4,
     overflow: 'hidden',
     justifyContent: 'flex-end',
@@ -422,7 +426,7 @@ const styles = StyleSheet.create({
   tapePrecipFill: {
     width: '100%',
     backgroundColor: theme.colors.accent2,
-    borderRadius: 2,
+    borderRadius: 0,
   },
   tapePrecipLight: {
     color: 'rgba(240,235,225,0.55)',
@@ -526,8 +530,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   barTrack: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 0,
     backgroundColor: theme.colors.faint,
     position: 'relative',
     overflow: 'hidden',
@@ -536,7 +540,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 0,
     backgroundColor: theme.colors.accent,
   },
   fcHi: {

@@ -153,30 +153,30 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         <View style={styles.dataStrip}>
           {(weather?.rainVolume ?? 0) > 0 && (
             <View style={styles.dataChip}>
-              <Text style={styles.dataChipIcon}>🌧</Text>
+              <Text style={styles.dataChipIcon}>R</Text>
               <Text style={styles.dataChipVal}>{weather!.rainVolume!.toFixed(1)} mm</Text>
               <Text style={styles.dataChipLabel}>Rain (1h)</Text>
             </View>
           )}
           {(weather?.snowVolume ?? 0) > 0 && (
             <View style={styles.dataChip}>
-              <Text style={styles.dataChipIcon}>❄</Text>
+              <Text style={styles.dataChipIcon}>S</Text>
               <Text style={styles.dataChipVal}>{weather!.snowVolume!.toFixed(1)} mm</Text>
               <Text style={styles.dataChipLabel}>Snow (1h)</Text>
             </View>
           )}
           {(weather?.windSpeed ?? 0) > 0 && (
             <View style={styles.dataChip}>
-              <Text style={styles.dataChipIcon}>💨</Text>
+              <Text style={styles.dataChipIcon}>W</Text>
               <Text style={styles.dataChipVal}>{Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h</Text>
               <Text style={styles.dataChipLabel}>{getWindDir(weather?.windDirection ?? 0)}</Text>
             </View>
           )}
           {weather?.description ? (
             <View style={styles.dataChip}>
-              <Text style={styles.dataChipIcon}>☁</Text>
+              <Text style={styles.dataChipIcon}>C</Text>
               <Text style={styles.dataChipVal}>{weather.description.charAt(0).toUpperCase() + weather.description.slice(1)}</Text>
-              <Text style={styles.dataChipLabel}>OWM Desc</Text>
+              <Text style={styles.dataChipLabel}>Condition</Text>
             </View>
           ) : null}
         </View>
@@ -209,7 +209,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       {/* Wind gust alert */}
       {(weather?.windGust || 0) > 15 && (
         <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round((weather?.windGust || 0) * 3.6)} kilometers per hour expected`}>
-          <Text style={styles.alertIcon} importantForAccessibility="no">⚠</Text>
+          <Text style={styles.alertIcon} importantForAccessibility="no">!</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>

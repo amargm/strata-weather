@@ -17,13 +17,15 @@ interface ProBadgeProps {
  * Returns null if user is Pro (unless force=true).
  */
 export function ProBadge({ dark = true, onPress, force }: ProBadgeProps) {
-  const { isPro, showPaywall } = useUser();
+  const { isPro, isGuest, showPaywall } = useUser();
+  // Hide for Pro users (they have access) and guests (don't show upgrade prompts)
   if (isPro && !force) return null;
+  if (isGuest) return null;
 
   const handlePress = onPress || showPaywall;
   const badge = (
     <View style={[styles.badge, dark ? styles.badgeDark : styles.badgeLight]}>
-      <Text style={[styles.lock, dark ? styles.lockDark : styles.lockLight]}>🔒</Text>
+      <Text style={[styles.lock, dark ? styles.lockDark : styles.lockLight]}>⊘</Text>
       <Text style={[styles.label, dark ? styles.labelDark : styles.labelLight]}>PRO</Text>
     </View>
   );

@@ -12,7 +12,7 @@ interface ScienceScreenProps {
 }
 
 export const ScienceScreen = React.memo(function ScienceScreen({ weather, today }: ScienceScreenProps) {
-  const { isPro, signOut, showPaywall } = useUser();
+  const { isPro, isGuest, signOut, showPaywall } = useUser();
   const barAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -151,8 +151,8 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
       <View style={styles.footerSection}>
         <View style={styles.footerDivider} />
 
-        {/* Upgrade banner — only for non-Pro */}
-        {!isPro && (
+        {/* Upgrade banner — only for signed-in non-Pro users, not guests */}
+        {!isPro && !isGuest && (
           <TouchableOpacity
             style={styles.upgradeBanner}
             onPress={showPaywall}
@@ -402,41 +402,45 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: sw(22),
     marginBottom: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: 'rgba(196,65,28,0.08)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(196,65,28,0.25)',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 2,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(240,235,225,0.2)',
   },
   upgradeBannerLeft: {
     flex: 1,
   },
   upgradeBannerTitle: {
     fontFamily: theme.fonts.serifBold,
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.paper,
-    letterSpacing: -0.3,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   upgradeBannerSub: {
     fontFamily: theme.fonts.mono,
-    fontSize: 10,
-    color: 'rgba(240,235,225,0.5)',
-    letterSpacing: 0.3,
-    marginTop: 2,
+    fontSize: 9,
+    color: 'rgba(240,235,225,0.45)',
+    letterSpacing: 0.5,
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
   upgradePill: {
-    backgroundColor: theme.colors.accent,
-    paddingVertical: 7,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    backgroundColor: 'transparent',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: theme.colors.accent,
   },
   upgradePillText: {
     fontFamily: theme.fonts.monoBold,
-    fontSize: 10,
-    letterSpacing: 1.2,
+    fontSize: 9,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
-    color: theme.colors.paper,
+    color: theme.colors.accent,
   },
 
   /* Action row */

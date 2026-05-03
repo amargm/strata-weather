@@ -146,15 +146,17 @@ export default function App(props: { initialLayer?: number }) {
   }, []);
 
   const isPro = authState === 'signed_in';
+  const isGuest = authState === 'guest';
   const authPassed = authState === 'signed_in' || authState === 'guest';
 
   // UserContext value — memoized to avoid re-renders
   const userContextValue = useMemo(() => ({
     authState,
     isPro,
+    isGuest,
     showPaywall: handleShowPaywall,
     signOut: handleSignOut,
-  }), [authState, isPro, handleShowPaywall, handleSignOut]);
+  }), [authState, isPro, isGuest, handleShowPaywall, handleSignOut]);
 
   // Only request location after auth is resolved (privacy: don't ask before user consents)
   const { coords, locationName, loading: locLoading } = useLocation(authPassed);
