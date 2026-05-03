@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms } from '../utils/responsive';
@@ -141,6 +141,18 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today 
           </View>
         </View>
       </View>
+
+      {/* Close app */}
+      <TouchableOpacity
+        style={styles.closeBtn}
+        onPress={() => BackHandler.exitApp()}
+        activeOpacity={0.6}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel="Close app"
+      >
+        <Text style={styles.closeBtnText}>Close Strata</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 });
@@ -313,5 +325,22 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.serifBlack,
     fontSize: 18,
     color: theme.colors.paper,
+  },
+  closeBtn: {
+    alignSelf: 'center',
+    marginTop: 28,
+    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(240,235,225,0.15)',
+  },
+  closeBtnText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: 'rgba(240,235,225,0.45)',
   },
 });
