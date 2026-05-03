@@ -63,23 +63,16 @@ class WeatherRefreshWorker(
     }
 
     private fun fetchCurrentWeather(apiKey: String, lat: Double, lon: Double): WeatherResult? {
-        val fields = listOf(
-            "temperature", "temperatureApparent", "humidity",
-            "windSpeed", "uvIndex", "precipitationProbability", "weatherCode"
-        ).joinToString(",")
-
         val url = URL(
-            "https://api.tomorrow.io/v4/timelines" +
-            "?location=$lat,$lon" +
-            "&fields=$fields" +
-            "&timesteps=current" +
-            "&units=metric"
+            "https://api.openweathermap.org/data/2.5/weather" +
+            "?lat=$lat&lon=$lon" +
+            "&units=metric" +
+            "&appid=$apiKey"
         )
 
         val conn = url.openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "GET"
-            conn.setRequestProperty("apikey", apiKey)
             conn.setRequestProperty("Accept", "application/json")
             conn.connectTimeout = 15_000
             conn.readTimeout = 15_000
@@ -100,27 +93,47 @@ class WeatherRefreshWorker(
     private fun parseResponse(body: String): WeatherResult? {
         return try {
             val json = JSONObject(body)
-            val intervals = json
-                .getJSONObject("data")
-                .getJSONArray("timelines")
-                .getJSONObject(0)
-                .getJSONArray("intervals")
-                .getJSONObject(0)
-                .getJSONObject("values")
+            val main = json.getJSONObject("main")
+            val wind = json.optJSONObject("wind") ?: JSONObject()
+            val weather = json.getJSONArray("weather").getJSONObject(0)
+            val owmId = weather.getInt("id")
 
             WeatherResult(
-                temp = intervals.getDouble("temperature").toFloat(),
-                feelsLike = intervals.getDouble("temperatureApparent").toFloat(),
-                humidity = intervals.getDouble("humidity").toFloat(),
-                windSpeed = intervals.getDouble("windSpeed").toFloat(),
-                uvIndex = intervals.getDouble("uvIndex").toFloat(),
-                precipProb = intervals.getDouble("precipitationProbability").toFloat(),
-                weatherCode = intervals.getInt("weatherCode")
+                temp = main.getDouble("temp").toFloat(),
+                feelsLike = main.getDouble("feels_like").toFloat(),
+                humidity = main.getDouble("humidity").toFloat(),
+                windSpeed = wind.optDouble("speed", 0.0).toFloat(),
+                uvIndex = 0f, // Not available in basic current weather
+                precipProb = 0f, // Not available in basic current weather
+                weatherCode = owmIdToInternal(owmId)
             )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse API response: ${e.message}", e)
             null
         }
+    }
+
+    /** Map OWM condition id to internal weather code (matches constants.ts) */
+    private fun owmIdToInternal(id: Int): Int = when {
+        id in 200..299 -> 8000 // Thunderstorm
+        id in 300..321 -> 4000 // Drizzle
+        id == 500 || id == 520 -> 4200 // Light rain
+        id == 501 || id == 521 -> 4001 // Rain
+        id in 502..504 || id == 522 || id == 531 -> 4201 // Heavy rain
+        id == 511 -> 6001 // Freezing rain
+        id == 600 || id == 620 -> 5100 // Light snow
+        id == 601 || id == 621 -> 5000 // Snow
+        id == 602 || id == 622 -> 5101 // Heavy snow
+        id in 611..616 -> 7000 // Sleet / ice
+        id in 701..762 -> 2100 // Mist/fog/haze
+        id == 771 -> 3002 // Squall
+        id == 781 -> 8000 // Tornado
+        id == 800 -> 1000 // Clear
+        id == 801 -> 1100 // Few clouds
+        id == 802 -> 1101 // Partly cloudy
+        id == 803 -> 1102 // Mostly cloudy
+        id == 804 -> 1001 // Overcast
+        else -> 1000
     }
 
     private fun saveToPrefs(prefs: android.content.SharedPreferences, w: WeatherResult) {
