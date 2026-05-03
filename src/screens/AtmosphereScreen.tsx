@@ -215,7 +215,7 @@ function MetricCell({
       accessibilityRole="text"
       accessibilityLabel={isPro ? `${label}. Upgrade to Pro to unlock.` : `${label} ${value} ${unit}. ${hint}`}
     >
-      {isPro ? <ProOverlay dark>{content}</ProOverlay> : content}
+      {isPro ? <ProOverlay dark force>{content}</ProOverlay> : content}
     </View>
   );
 }

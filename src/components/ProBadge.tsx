@@ -7,16 +7,18 @@ interface ProBadgeProps {
   /** true = dark (ink) background layers, false = light (paper) */
   dark?: boolean;
   onPress?: () => void;
+  /** Always show badge even for Pro users (data genuinely unavailable on free API) */
+  force?: boolean;
 }
 
 /**
  * Small "PRO" lock badge overlaid on metrics that require a paid API tier.
  * Auto-wires to UserContext paywall when no explicit onPress provided.
- * Returns null if user is Pro (no badge needed).
+ * Returns null if user is Pro (unless force=true).
  */
-export function ProBadge({ dark = true, onPress }: ProBadgeProps) {
+export function ProBadge({ dark = true, onPress, force }: ProBadgeProps) {
   const { isPro, showPaywall } = useUser();
-  if (isPro) return null;
+  if (isPro && !force) return null;
 
   const handlePress = onPress || showPaywall;
   const badge = (
@@ -38,9 +40,9 @@ export function ProBadge({ dark = true, onPress }: ProBadgeProps) {
  * Wrap around the cell content.
  * Returns just children if user is Pro (no overlay).
  */
-export function ProOverlay({ dark = true, children, onPress }: ProBadgeProps & { children: React.ReactNode }) {
+export function ProOverlay({ dark = true, children, onPress, force }: ProBadgeProps & { children: React.ReactNode }) {
   const { isPro, showPaywall } = useUser();
-  if (isPro) return <>{children}</>;
+  if (isPro && !force) return <>{children}</>;
 
   const handlePress = onPress || showPaywall;
   return (

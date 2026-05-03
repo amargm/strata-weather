@@ -14,7 +14,6 @@ import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
 import { ProBadge } from '../components/ProBadge';
-import { useUser } from '../context/UserContext';
 import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -30,7 +29,6 @@ interface NowScreenProps {
 }
 
 export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh }: NowScreenProps) {
-  const { isPro } = useUser();
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -274,24 +272,12 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Wind speed</Text>
         </Animated.View>
-        <Animated.View style={[styles.liveItem, { opacity: liveItem3, transform: [{ translateX: liveItem3.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={isPro ? `UV index ${weather?.uvIndex ?? 'unknown'}. Sun exposure strength` : `UV index. Upgrade to Pro to unlock`}>
-          {isPro ? (
-            <>
-              <View style={styles.liveRow}>
-                <Text style={styles.liveVal}>UV {weather?.uvIndex ?? '--'}</Text>
-                <Text style={styles.liveLabel}>Index</Text>
-              </View>
-              <Text style={styles.liveHint}>Sun exposure</Text>
-            </>
-          ) : (
-            <>
-              <View style={styles.liveRow}>
-                <Text style={[styles.liveVal, { opacity: 0.35 }]}>UV --</Text>
-                <ProBadge dark={false} />
-              </View>
-              <Text style={styles.liveHint}>Pro feature</Text>
-            </>
-          )}
+        <Animated.View style={[styles.liveItem, { opacity: liveItem3, transform: [{ translateX: liveItem3.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`UV index. Upgrade to Pro to unlock`}>
+          <View style={styles.liveRow}>
+            <Text style={[styles.liveVal, { opacity: 0.35 }]}>UV --</Text>
+            <ProBadge dark={false} force />
+          </View>
+          <Text style={styles.liveHint}>Pro feature</Text>
         </Animated.View>
 
         {/* Refresh button */}
