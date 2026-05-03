@@ -107,23 +107,42 @@ export default function App(props: { initialLayer?: number }) {
   const [showSplash, setShowSplash] = useState(true);
   const splashOpacity = useRef(new RNAnimated.Value(1)).current;
   const splashScale = useRef(new RNAnimated.Value(1)).current;
+  const splashReady = useRef(false);
+  const dataReady = useRef(false);
+
+  const dismissSplash = useCallback(() => {
+    if (!splashReady.current) return;
+    RNAnimated.parallel([
+      RNAnimated.timing(splashScale, {
+        toValue: 1.15,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(splashOpacity, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setShowSplash(false));
+  }, []);
+
+  // Minimum splash display: 1.8s
   useEffect(() => {
     const timer = setTimeout(() => {
-      RNAnimated.parallel([
-        RNAnimated.timing(splashScale, {
-          toValue: 1.15,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        RNAnimated.timing(splashOpacity, {
-          toValue: 0,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ]).start(() => setShowSplash(false));
-    }, 4000);
+      splashReady.current = true;
+      // If data already loaded, dismiss now
+      if (dataReady.current) dismissSplash();
+    }, 1800);
     return () => clearTimeout(timer);
   }, []);
+
+  // When data arrives, dismiss splash (if min time elapsed)
+  useEffect(() => {
+    if (data && !dataReady.current) {
+      dataReady.current = true;
+      if (splashReady.current) dismissSplash();
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!showSplash && !(locLoading || weatherLoading)) return;

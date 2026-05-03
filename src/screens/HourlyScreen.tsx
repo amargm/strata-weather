@@ -15,6 +15,50 @@ import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
 const ITEM_WIDTH = sw(64);
 
+/** Generate a poetic forecast summary from hourly + daily data */
+function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]): string {
+  if (!hourly.length && !daily.length) return '';
+
+  const nextRainHour = hourly.findIndex(
+    (h, i) => i > 0 && h.values.precipitationProbability > 40,
+  );
+  const todayHi = daily[0]?.values.temperatureMax;
+  const todayLo = daily[0]?.values.temperatureMin;
+  const tomorrowCode = daily[1]?.values.weatherCode;
+  const tomorrowCond = tomorrowCode ? WEATHER_CODES[tomorrowCode]?.label : null;
+
+  // Rain incoming within 6 hours
+  if (nextRainHour > 0 && nextRainHour <= 6) {
+    const hrs = nextRainHour;
+    return `Rain likely in ${hrs === 1 ? 'about an hour' : `${hrs} hours`}. Plan accordingly.`;
+  }
+
+  // Big temp swing today
+  if (todayHi != null && todayLo != null && todayHi - todayLo > 12) {
+    return `A ${Math.round(todayHi - todayLo)}° swing today — dress in layers.`;
+  }
+
+  // Tomorrow changes
+  if (tomorrowCond) {
+    const todayCode = daily[0]?.values.weatherCode || 1000;
+    const todayCond = WEATHER_CODES[todayCode]?.label || 'Clear';
+    if (tomorrowCond !== todayCond) {
+      return `Tomorrow shifts to ${tomorrowCond.toLowerCase()}. Today, ${todayCond.toLowerCase()}.`;
+    }
+  }
+
+  // Dry streak
+  const dryDays = daily.filter(d => d.values.precipitationProbability < 20).length;
+  if (dryDays >= 5) {
+    return `${dryDays} dry days ahead. The sky is in a generous mood.`;
+  }
+
+  // Fallback
+  if (todayHi != null && todayHi > 30) return 'A hot stretch ahead. Keep water close.';
+  if (todayLo != null && todayLo < 5) return 'Cold nights coming. The forecast says bundle up.';
+  return 'The week ahead looks settled. No surprises on the horizon.';
+}
+
 interface HourlyScreenProps {
   hourly: TimelineInterval[];
   currentWind: WeatherValues | null;
@@ -23,6 +67,11 @@ interface HourlyScreenProps {
 
 export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind, daily }: HourlyScreenProps) {
   const scrollRef = useRef<ScrollView>(null);
+
+  const forecastSummary = React.useMemo(
+    () => getForecastSummary(hourly, daily),
+    [hourly, daily],
+  );
 
   // Forecast bar range
   const { minTemp, range } = React.useMemo(() => {
@@ -246,6 +295,11 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             );
           })}
         </View>
+
+        {/* Forecast summary */}
+        {forecastSummary ? (
+          <Text style={styles.forecastSummary}>{forecastSummary}</Text>
+        ) : null}
       </View>
     </View>
   );
@@ -473,5 +527,14 @@ const styles = StyleSheet.create({
     fontFamily: theme.fonts.mono,
     fontSize: 8,
     color: theme.colors.accent2,
+  },
+  forecastSummary: {
+    fontFamily: theme.fonts.serifItalic,
+    fontSize: ms(13),
+    lineHeight: ms(19),
+    color: theme.colors.muted,
+    textAlign: 'center',
+    paddingHorizontal: sw(16),
+    marginTop: sh(10),
   },
 });

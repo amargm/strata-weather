@@ -11,8 +11,10 @@ class MainActivity : ReactActivity() {
     override fun getMainComponentName(): String = "StrataWeather"
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.AppTheme)
+        // Keep BootTheme's paper background visible during RN init.
+        // Theme swap happens after the React surface is ready.
         super.onCreate(savedInstanceState)
+        setTheme(R.style.AppTheme)
     }
 
     override fun createReactActivityDelegate(): ReactActivityDelegate =
