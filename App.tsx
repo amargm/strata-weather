@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   TouchableOpacity,
   Text,
   StatusBar,
@@ -53,8 +53,6 @@ import { PaywallModal } from './src/components/PaywallModal';
 import { CitySearchModal } from './src/components/CitySearchModal';
 import { UserProvider, AuthState } from './src/context/UserContext';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const LAYER_LABELS = ['Now', 'Atmosphere', 'Timeline', 'Science'];
 const LAST_LAYER_KEY = 'strata_last_layer';
 const ONBOARDED_KEY = 'strata_onboarded';
@@ -92,6 +90,8 @@ function friendlyError(raw: string): { title: string; body: string } {
 }
 
 export default function App(props: { initialLayer?: number }) {
+  // Keep paging geometry in sync with rotation, split-screen and window resizing.
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const [fontsLoaded] = useFonts({
     'PlayfairDisplay': PlayfairDisplay_400Regular,
     'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
