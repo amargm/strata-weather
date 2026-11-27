@@ -20,7 +20,7 @@ function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]):
   if (!hourly.length && !daily.length) return '';
 
   const nextRainHour = hourly.findIndex(
-    (h, i) => i > 0 && h.values.precipitationProbability > 40,
+    (h, i) => i > 0 && h.values.precipitationProbability != null && h.values.precipitationProbability > 40,
   );
   const todayHi = daily[0]?.values.temperatureMax;
   const todayLo = daily[0]?.values.temperatureMin;
