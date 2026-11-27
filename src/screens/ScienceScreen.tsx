@@ -33,13 +33,13 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
     return () => sub.remove();
   }, []);
 
-  const uvIndex = weather?.uvIndex ?? 0;
-  const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
+  const uvIndex = weather?.uvIndex ?? null;
+  const uvLabel = uvIndex == null ? 'Unavailable' : uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
 
   useEffect(() => {
     if (!weather) return;
     const targets = [
-      Math.min(uvIndex / 11, 1),
+      uvIndex == null ? 0 : Math.min(uvIndex / 11, 1),
       Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
       Math.max(0, Math.min((weather.temperatureApparent + 10) / 60, 1)),
     ];
@@ -90,9 +90,9 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
         {/* UV Index */}
         <MetricCell
           label="UV Index"
-          value={`${uvIndex}`}
+          value={uvIndex == null ? '—' : `${uvIndex}`}
           unit={uvLabel}
-          hint={uvIndex >= 6 ? 'Wear sunscreen — burns in under 20 min.' : 'Sun exposure is manageable right now.'}
+          hint={uvIndex == null ? 'UV data is not included in the current free weather response.' : uvIndex >= 6 ? 'Wear sunscreen — UV exposure is high.' : 'Check local guidance for sun protection.'}
           barAnim={barAnims[0]}
           color={theme.colors.accent}
           isLeft
