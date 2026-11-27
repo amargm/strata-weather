@@ -101,9 +101,9 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         />
         <MetricCell
           label="Visibility"
-          value={`${Math.round(weather?.visibility ?? 0)}`}
+          value={weather?.visibility == null ? '—' : `${Math.round(weather.visibility)}`}
           unit="km"
-          hint="How far you can see clearly right now."
+          hint={weather?.visibility == null ? 'Visibility is not available in this response.' : 'How far you can see clearly right now.'}
           barAnim={barAnims[3]}
           color="rgba(240,235,225,0.4)"
           isLeft={false}
@@ -131,7 +131,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
             <View style={styles.dataChip}>
               <Text style={styles.dataChipIcon}>W</Text>
               <Text style={styles.dataChipVal}>{Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h</Text>
-              <Text style={styles.dataChipLabel}>{getWindDir(weather?.windDirection ?? 0)}</Text>
+              <Text style={styles.dataChipLabel}>{weather?.windDirection == null ? 'Direction unavailable' : getWindDir(weather.windDirection)}</Text>
             </View>
           )}
           {weather?.description ? (
@@ -162,8 +162,8 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       )}
 
       {/* Wind gust alert */}
-      {(weather?.windGust || 0) > 15 && (
-        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round((weather?.windGust || 0) * 3.6)} kilometers per hour expected`}>
+      {weather?.windGust != null && weather.windGust > 15 && (
+        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round(weather.windGust * 3.6)} kilometers per hour expected`}>
           <Text style={styles.alertIcon} importantForAccessibility="no">!</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
@@ -180,12 +180,12 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
           <Text style={styles.aqiTitle}>Air Quality</Text>
           <View style={styles.aqiRow}>
             <View style={[styles.aqiBadge, { backgroundColor: AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
-              <Text style={styles.aqiBadgeNum}>{airQuality.aqi}</Text>
+              <Text style={styles.aqiBadgeNum}>{airQuality.aqi == null ? '—' : airQuality.aqi}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.aqiLabel}>{AQI_LABELS[airQuality.aqi]?.label ?? 'Unknown'}</Text>
+              <Text style={styles.aqiLabel}>{airQuality.aqi == null ? 'AQI unavailable' : AQI_LABELS[airQuality.aqi]?.label ?? 'Unknown'}</Text>
               <Text style={styles.aqiDetail}>
-                PM2.5 {airQuality.pm2_5.toFixed(1)} · PM10 {airQuality.pm10.toFixed(1)} · O₃ {airQuality.o3.toFixed(1)}
+                PM2.5 {airQuality.pm2_5 == null ? '—' : airQuality.pm2_5.toFixed(1)} · PM10 {airQuality.pm10 == null ? '—' : airQuality.pm10.toFixed(1)} · O₃ {airQuality.o3 == null ? '—' : airQuality.o3.toFixed(1)}
               </Text>
             </View>
           </View>
