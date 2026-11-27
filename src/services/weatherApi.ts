@@ -333,9 +333,9 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
     pressureTrend: computePressureTrend(forecastItems),
     airQuality,
     timezoneOffset: optionalNumber(currentData.timezone) ?? undefined,
-    cityTempMin: optionalNumber(currentData.main?.temp_min),
-    cityTempMax: optionalNumber(currentData.main?.temp_max),
-    seaLevelPressure: optionalNumber(currentData.main?.sea_level, 0),
+    cityTempMin: optionalNumber(currentData.main?.temp_min) ?? undefined,
+    cityTempMax: optionalNumber(currentData.main?.temp_max) ?? undefined,
+    seaLevelPressure: optionalNumber(currentData.main?.sea_level, 0) ?? undefined,
     comfortIndex: computeComfortIndex(current.temperature, current.temperatureApparent, current.humidity),
     outdoorScore: computeOutdoorScore(current),
   };
