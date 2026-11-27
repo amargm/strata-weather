@@ -16,12 +16,29 @@ function locationKey(coords: LocationCoords): string {
   return `${coords.latitude.toFixed(3)},${coords.longitude.toFixed(3)}`;
 }
 
+function parseCachedWeather(raw: string | null): CachedWeather | null {
+  if (!raw) return null;
+  try {
+    const cached: unknown = JSON.parse(raw);
+    if (!cached || typeof cached !== 'object') return null;
+    const value = cached as Partial<CachedWeather>;
+    if (
+      !value.data ||
+      typeof value.locationKey !== 'string' ||
+      typeof value.savedAt !== 'number' ||
+      !Number.isFinite(value.savedAt) ||
+      value.savedAt < 0
+    ) return null;
+    return value as CachedWeather;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCachedWeather(coords: LocationCoords): Promise<WeatherData | null> {
   try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached: CachedWeather = JSON.parse(raw);
-    if (!cached?.data || cached.locationKey !== locationKey(coords)) return null;
+    const cached = parseCachedWeather(await AsyncStorage.getItem(CACHE_KEY));
+    if (!cached || cached.locationKey !== locationKey(coords)) return null;
     return cached.data;
   } catch {
     return null;
@@ -30,10 +47,8 @@ export async function getCachedWeather(coords: LocationCoords): Promise<WeatherD
 
 export async function isCacheStale(coords: LocationCoords): Promise<boolean> {
   try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY);
-    if (!raw) return true;
-    const cached: CachedWeather = JSON.parse(raw);
-    if (!cached?.data || cached.locationKey !== locationKey(coords)) return true;
+    const cached = parseCachedWeather(await AsyncStorage.getItem(CACHE_KEY));
+    if (!cached || cached.locationKey !== locationKey(coords)) return true;
     return Date.now() - cached.savedAt > CACHE_TTL_MS;
   } catch {
     return true;
