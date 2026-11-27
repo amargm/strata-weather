@@ -145,17 +145,17 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       )}
 
       {/* Wind compass */}
-      {(weather?.windSpeed ?? 0) > 0 && (
+      {(weather?.windSpeed ?? 0) > 0 && weather?.windDirection != null && (
         <View style={styles.compassSection}>
           <View style={styles.compassContainer}>
             <View style={styles.compassRing}>
               <Text style={styles.compassN}>N</Text>
-              <View style={[styles.compassNeedle, { transform: [{ rotate: `${weather?.windDirection ?? 0}deg` }] }]}>
+              <View style={[styles.compassNeedle, { transform: [{ rotate: `${weather.windDirection}deg` }] }]}>
                 <View style={styles.needleArrow} />
               </View>
             </View>
             <Text style={styles.compassLabel}>
-              {getWindDir(weather?.windDirection ?? 0)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
+              {getWindDir(weather.windDirection)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
             </Text>
           </View>
         </View>
@@ -168,7 +168,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>
-              Gusts to {Math.round((weather?.windGust || 0) * 3.6)} km/h expected. Secure loose objects.
+              Gusts to {Math.round(weather.windGust * 3.6)} km/h expected. Secure loose objects.
             </Text>
           </View>
         </View>
