@@ -179,7 +179,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         <View style={styles.aqiSection}>
           <Text style={styles.aqiTitle}>Air Quality</Text>
           <View style={styles.aqiRow}>
-            <View style={[styles.aqiBadge, { backgroundColor: AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
+            <View style={[styles.aqiBadge, { backgroundColor: airQuality.aqi == null ? '#888' : AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
               <Text style={styles.aqiBadgeNum}>{airQuality.aqi == null ? '—' : airQuality.aqi}</Text>
             </View>
             <View style={{ flex: 1 }}>
