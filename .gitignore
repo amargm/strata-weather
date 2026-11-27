@@ -37,3 +37,6 @@ local.properties
 # Logs
 *.log
 npm-debug.log*
+
+# Temporary compiled test output
+.test-build/
