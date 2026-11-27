@@ -29,10 +29,10 @@ function mapCurrentWeather(data: any): WeatherValues {
     windGust: wind.gust ?? 0,
     pressureSurfaceLevel: main.pressure ?? 1013,
     cloudCover: clouds.all ?? 0,
-    uvIndex: 0, // Not in current weather — filled from One Call if available
+    uvIndex: null, // Not supplied by the free current-weather endpoint
     visibility: (data.visibility ?? 10000) / 1000, // m → km
-    dewPoint: 0, // Not in basic current — filled from One Call
-    precipitationProbability: 0, // Not in current weather
+    dewPoint: null, // Not supplied by the free current-weather endpoint
+    precipitationProbability: null, // Current conditions do not include probability of precipitation
     weatherCode: owmToInternalCode(weather.id ?? 800),
     rainVolume: data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0,
     snowVolume: data.snow?.['1h'] ?? data.snow?.['3h'] ?? 0,
@@ -58,9 +58,9 @@ function mapHourlyItem(item: any): TimelineInterval {
       windGust: wind.gust ?? 0,
       pressureSurfaceLevel: main.pressure ?? 1013,
       cloudCover: clouds.all ?? 0,
-      uvIndex: 0,
+      uvIndex: null,
       visibility: (item.visibility ?? 10000) / 1000,
-      dewPoint: 0,
+      dewPoint: null,
       precipitationProbability: Math.round((item.pop ?? 0) * 100),
       weatherCode: owmToInternalCode(weather.id ?? 800),
       rainVolume: item.rain?.['3h'] ?? 0,
@@ -174,8 +174,10 @@ function computeComfortIndex(temp: number, feelsLike: number, humidity: number):
 function computeOutdoorScore(weather: WeatherValues): number {
   let score = 10;
   // Rain penalty
-  if (weather.precipitationProbability > 60) score -= 3;
-  else if (weather.precipitationProbability > 30) score -= 1;
+  if (weather.precipitationProbability != null) {
+    if (weather.precipitationProbability > 60) score -= 3;
+    else if (weather.precipitationProbability > 30) score -= 1;
+  }
   // Wind penalty
   const windKmh = weather.windSpeed * 3.6;
   if (windKmh > 40) score -= 3;
@@ -187,7 +189,7 @@ function computeOutdoorScore(weather: WeatherValues): number {
   if (weather.visibility < 1) score -= 2;
   else if (weather.visibility < 5) score -= 1;
   // UV penalty
-  if (weather.uvIndex > 10) score -= 1;
+  if (weather.uvIndex != null && weather.uvIndex > 10) score -= 1;
   return Math.max(0, Math.min(10, score));
 }
 
