@@ -6,7 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   AccessibilityInfo,
-  Dimensions,
+  useWindowDimensions,
   Easing,
 } from 'react-native';
 import { theme } from '../utils/theme';
@@ -15,8 +15,6 @@ import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
 import { ProBadge } from '../components/ProBadge';
 import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 interface NowScreenProps {
   weather: WeatherValues | null;
@@ -78,6 +76,8 @@ function getFreshness(ts?: number): string | null {
 }
 
 export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh, sunriseTime, sunsetTime, dataTimestamp, comfortIndex, outdoorScore, timezoneOffset, cityTempMin, cityTempMax, onCitySearch, isCustomLocation, onResetLocation }: NowScreenProps) {
+  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
+  const temperatureFontSize = Math.max(56, Math.min(ms(120, 0.4), SCREEN_H * 0.17, SCREEN_W * 0.34));
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -398,7 +398,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         accessibilityLiveRegion="polite"
       >
         <TouchableOpacity activeOpacity={0.9}>
-          <Text style={styles.tempSuper}>
+          <Text style={[styles.tempSuper, { fontSize: temperatureFontSize, lineHeight: temperatureFontSize }]}>
             {Math.round(weather?.temperature || 0)}
             <Text style={styles.tempUnitMark}>°C</Text>
           </Text>
