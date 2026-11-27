@@ -127,7 +127,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
               <Text style={styles.dataChipLabel}>Snow (1h)</Text>
             </View>
           )}
-          {(weather?.windSpeed ?? 0) > 0 && (
+          {weather?.windSpeed != null && (
             <View style={styles.dataChip}>
               <Text style={styles.dataChipIcon}>W</Text>
               <Text style={styles.dataChipVal}>{Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h</Text>
