@@ -6,7 +6,9 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "npm run test:compile && node --test tests/*.test.cjs",
+    "test:compile": "tsc --module commonjs --target ES2020 --outDir .test-build --rootDir src --esModuleInterop --skipLibCheck --strict src/services/weatherApi.ts"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.2.0",
