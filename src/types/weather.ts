@@ -29,9 +29,9 @@ export interface DailyValues {
   humidity: number;
   windSpeed: number;
   windDirection: number;
-  precipitationProbability: number;
+  precipitationProbability: number | null;
   weatherCode: number;
-  uvIndex: number;
+  uvIndex: number | null;
   sunriseTime: string;
   sunsetTime: string;
 }
