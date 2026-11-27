@@ -15,7 +15,7 @@ import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
 const ITEM_WIDTH = sw(72);
 
-/** Generate a poetic forecast summary from hourly + daily data */
+/** Generate a forecast summary from 3-hour timeline intervals + daily data. */
 function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]): string {
   if (!hourly.length && !daily.length) return '';
 
@@ -27,10 +27,10 @@ function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]):
   const tomorrowCode = daily[1]?.values.weatherCode;
   const tomorrowCond = tomorrowCode ? WEATHER_CODES[tomorrowCode]?.label : null;
 
-  // Rain incoming within 6 hours
-  if (nextRainHour > 0 && nextRainHour <= 6) {
-    const hrs = nextRainHour;
-    return `Rain likely in ${hrs === 1 ? 'about an hour' : `${hrs} hours`}. Plan accordingly.`;
+  // Each item represents a 3-hour interval from OpenWeather's free endpoint.
+  if (nextRainHour > 0 && nextRainHour <= 2) {
+    const hrs = nextRainHour * 3;
+    return `Rain likely in about ${hrs} hours. Plan accordingly.`;
   }
 
   // Big temp swing today
@@ -152,7 +152,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 02 · Timeline</Text>
-          <Text style={styles.title}>Hours & Days</Text>
+          <Text style={styles.title}>3-hour outlook</Text>
         </View>
         <View style={styles.windBadge}>
           <Text style={styles.windBadgeVal}>
@@ -162,7 +162,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         </View>
       </View>
 
-      {/* Compact hourly tape */}
+      {/* Compact 3-hour forecast tape */}
       <View style={styles.tapeSection}>
         <ScrollView
           ref={scrollRef}
@@ -171,7 +171,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
           contentContainerStyle={styles.tapeContent}
           style={styles.tape}
           accessibilityRole="list"
-          accessibilityLabel="Hourly forecast timeline"
+          accessibilityLabel="Forecast timeline in 3-hour intervals"
         >
           {hourly.map((item, index) => {
             const code = item.values.weatherCode;
