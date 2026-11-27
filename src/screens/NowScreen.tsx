@@ -336,9 +336,9 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Moisture in air</Text>
         </Animated.View>
-        <Animated.View style={[styles.liveItem, { opacity: liveItem2, transform: [{ translateX: liveItem2.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Wind ${Math.round((weather?.windSpeed || 0) * 3.6)} kilometers per hour`}>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem2, transform: [{ translateX: liveItem2.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Wind ${weather?.windSpeed == null ? 'unavailable' : `${Math.round(weather.windSpeed * 3.6)} kilometers per hour`}`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>{Math.round((weather?.windSpeed || 0) * 3.6)}km/h</Text>
+            <Text style={styles.liveVal}>{weather?.windSpeed == null ? '—' : `${Math.round(weather.windSpeed * 3.6)}km/h`}</Text>
             <Text style={styles.liveLabel}>Wind</Text>
           </View>
           <Text style={styles.liveHint}>Wind speed</Text>
@@ -417,7 +417,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <Animated.View style={[styles.nowFooter, { opacity: footerFade }]}>
         <Text style={styles.conditionLong}>
-          {expressiveDescription || `${weather?.description ? (weather.description.charAt(0).toUpperCase() + weather.description.slice(1)) : condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
+          {expressiveDescription || `${weather?.description ? (weather.description.charAt(0).toUpperCase() + weather.description.slice(1)) : condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${weather?.visibility == null ? 'unavailable' : `${Math.round(weather.visibility)} km`}.`}
         </Text>
         {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0) && (
           <Text style={styles.precipNote}>
