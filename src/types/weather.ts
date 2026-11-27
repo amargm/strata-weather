@@ -12,8 +12,8 @@ export interface WeatherValues {
   dewPoint: number | null;
   precipitationProbability: number | null;
   weatherCode: number;
-  rainVolume?: number;
-  snowVolume?: number;
+  rainVolume?: number | null;
+  snowVolume?: number | null;
   description?: string;
   isNight?: boolean;
 }
