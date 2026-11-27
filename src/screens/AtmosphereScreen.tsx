@@ -111,7 +111,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       </View>
 
       {/* Precipitation & wind data strip */}
-      {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0 || (weather?.windSpeed ?? 0) > 0) && (
+      {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0 || weather?.windSpeed != null) && (
         <View style={styles.dataStrip}>
           {(weather?.rainVolume ?? 0) > 0 && (
             <View style={styles.dataChip}>
