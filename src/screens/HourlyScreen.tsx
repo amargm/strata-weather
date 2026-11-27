@@ -48,7 +48,7 @@ function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]):
   }
 
   // Dry streak
-  const dryDays = daily.filter(d => d.values.precipitationProbability < 20).length;
+  const dryDays = daily.filter(d => d.values.precipitationProbability != null && d.values.precipitationProbability < 20).length;
   if (dryDays >= 5) {
     return `${dryDays} dry days ahead. The sky is in a generous mood.`;
   }
@@ -185,7 +185,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 style={[styles.tapeItem, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${precip} percent precipitation chance${item.values.isNight ? ', nighttime' : ''}`}
+                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}${precip == null ? '' : `, ${precip} percent precipitation chance`}${item.values.isNight ? ', nighttime' : ''}`}
               >
                 <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                   {formatHour(item.startTime, index)}
@@ -195,7 +195,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                   {Math.round(item.values.temperature)}°
                 </Text>
-                {precip > 0 && (
+                {precip != null && precip > 0 && (
                   <View style={styles.tapePrecipBar}>
                     <View style={[styles.tapePrecipFill, { height: `${Math.min(precip, 100)}%` }]} />
                   </View>
@@ -256,7 +256,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 ]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}.${precip > 0 ? ` ${precip} percent precipitation.` : ''}`}
+                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}.${precip != null && precip > 0 ? ` ${precip} percent precipitation.` : ''}`}
               >
                 {/* Day + date */}
                 <View style={styles.dayCol}>
