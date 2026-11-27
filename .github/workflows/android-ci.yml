@@ -63,7 +63,7 @@ jobs:
         run: npm test
 
   android-debug:
-    name: Android debug APK
+    name: Android standalone QA APK
     needs: typecheck
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -100,13 +100,13 @@ jobs:
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon clean assembleRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: strata-weather-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: strata-weather-qa-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 7
 
