@@ -200,7 +200,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                     <View style={[styles.tapePrecipFill, { height: `${Math.min(precip, 100)}%` }]} />
                   </View>
                 )}
-                {precip > 0 && (
+                {precip != null && precip > 0 && (
                   <Text style={[styles.tapePrecip, isNow && styles.tapePrecipLight]}>
                     {precip}%
                   </Text>
@@ -290,7 +290,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
 
                 {/* Precip */}
                 <View style={styles.precipCol}>
-                  {precip > 0 ? (
+                  {precip != null && precip > 0 ? (
                     <Text style={styles.fcPrecip}>{precip}%</Text>
                   ) : null}
                 </View>
