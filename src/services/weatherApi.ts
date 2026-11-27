@@ -61,7 +61,7 @@ function mapHourlyItem(item: any): TimelineInterval {
       uvIndex: null,
       visibility: (item.visibility ?? 10000) / 1000,
       dewPoint: null,
-      precipitationProbability: Math.round((item.pop ?? 0) * 100),
+      precipitationProbability: item.pop == null ? null : Math.round(item.pop * 100),
       weatherCode: owmToInternalCode(weather.id ?? 800),
       rainVolume: item.rain?.['3h'] ?? 0,
       snowVolume: item.snow?.['3h'] ?? 0,
@@ -90,7 +90,10 @@ function aggregateDaily(items: any[]): DailyInterval[] {
     const humidities = dayItems.map((d: any) => d.main?.humidity ?? 0);
     const winds = dayItems.map((d: any) => d.wind?.speed ?? 0);
     const windDirs = dayItems.map((d: any) => d.wind?.deg ?? 0);
-    const pops = dayItems.map((d: any) => Math.round((d.pop ?? 0) * 100));
+    const pops = dayItems
+      .map((d: any) => d.pop)
+      .filter((value: unknown): value is number => typeof value === 'number' && Number.isFinite(value))
+      .map((value: number) => Math.round(value * 100));
     // Use the most frequently reported condition. OpenWeather condition IDs
     // are categories, not an ordered severity scale.
     const conditionCounts = new Map<number, number>();
@@ -109,9 +112,9 @@ function aggregateDaily(items: any[]): DailyInterval[] {
         humidity: Math.round(humidities.reduce((a: number, b: number) => a + b, 0) / humidities.length),
         windSpeed: Math.max(...winds),
         windDirection: Math.round(windDirs.reduce((a: number, b: number) => a + b, 0) / windDirs.length),
-        precipitationProbability: Math.max(...pops),
+        precipitationProbability: pops.length ? Math.max(...pops) : null,
         weatherCode: owmToInternalCode(dominantId),
-        uvIndex: 0,
+        uvIndex: null,
         sunriseTime: '', // Not available in free tier forecast
         sunsetTime: '',
       },
