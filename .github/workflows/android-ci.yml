@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: android-ci-${{ github.ref }}
@@ -107,3 +107,35 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 7
+
+  commit-safe-lockfile:
+    name: Commit verified non-breaking lockfile updates
+    if: github.ref == 'refs/heads/improve/product-foundation'
+    needs: android-debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tested branch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: true
+      - name: Download tested lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package-lock-safe-fixes
+          path: .lockfile-artifact
+      - name: Verify lockfile matches package manifest
+        run: |
+          cp .lockfile-artifact/package-lock.json package-lock.json
+          npm ci
+      - name: Commit lockfile if changed
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "No compatible dependency updates to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: apply non-breaking dependency fixes"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
