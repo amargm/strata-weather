@@ -218,13 +218,27 @@ export async function searchCities(query: string): Promise<GeocodingResult[]> {
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return (data || []).map((item: any) => ({
-      name: item.name ?? '',
-      lat: item.lat ?? 0,
-      lon: item.lon ?? 0,
-      country: item.country ?? '',
-      state: item.state,
-    }));
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter((item: any) =>
+        typeof item?.name === 'string' &&
+        item.name.trim().length > 0 &&
+        typeof item?.lat === 'number' &&
+        Number.isFinite(item.lat) &&
+        item.lat >= -90 &&
+        item.lat <= 90 &&
+        typeof item?.lon === 'number' &&
+        Number.isFinite(item.lon) &&
+        item.lon >= -180 &&
+        item.lon <= 180
+      )
+      .map((item: any) => ({
+        name: item.name.trim(),
+        lat: item.lat,
+        lon: item.lon,
+        country: typeof item.country === 'string' ? item.country : '',
+        state: typeof item.state === 'string' ? item.state : undefined,
+      }));
   } catch {
     return [];
   }
