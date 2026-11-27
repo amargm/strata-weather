@@ -9,7 +9,7 @@ workflows:
       groups:
         - weather_api  # Contains WEATHER_API_KEY
       vars:
-        PACKAGE_NAME: "com.strataweather"
+        PACKAGE_NAME: "com.fieldweather"
     scripts:
       - name: Install npm dependencies
         script: |
