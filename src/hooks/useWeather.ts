@@ -87,5 +87,12 @@ export function useWeather(coords: LocationCoords | null): UseWeatherReturn {
     };
   }, [coords?.latitude, coords?.longitude]);
 
-  return { data, loading, error, refresh: fetchData };
+  // Never expose the previous location's data during the render before the
+  // coordinate-change effect has cleared state.
+  const visibleData = coords && data && sameLocation(coords, {
+    latitude: data.location.lat,
+    longitude: data.location.lon,
+  }) ? data : null;
+
+  return { data: visibleData, loading: loading || (!!coords && !visibleData), error, refresh: fetchData };
 }
