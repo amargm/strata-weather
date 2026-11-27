@@ -13,11 +13,24 @@ function resolveApiKey(): string {
   return _apiKey || OWM_API_KEY;
 }
 
-function requiredNumber(value: unknown, field: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+function optionalNumber(value: unknown, min = -Infinity, max = Infinity): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+    ? value
+    : null;
+}
+
+function requiredNumber(
+  value: unknown,
+  field: string,
+  min = -Infinity,
+  max = Infinity,
+  integer = false
+): number {
+  const valid = optionalNumber(value, min, max);
+  if (valid == null || (integer && !Number.isInteger(valid))) {
     throw new Error('OpenWeather response is missing a valid ' + field);
   }
-  return value;
+  return valid;
 }
 
 /** Map OWM current weather response to internal WeatherValues */
@@ -30,19 +43,19 @@ function mapCurrentWeather(data: any): WeatherValues {
     temperature: requiredNumber(main.temp, 'temperature'),
     temperatureApparent: requiredNumber(main.feels_like, 'feels-like temperature'),
     humidity: requiredNumber(main.humidity, 'humidity'),
-    windSpeed: wind.speed ?? null,   // m/s; optional in provider response
-    windDirection: wind.deg ?? null,
-    windGust: wind.gust ?? null,
-    pressureSurfaceLevel: requiredNumber(main.pressure, 'pressure'),
-    cloudCover: requiredNumber(clouds.all, 'cloud cover'),
+    windSpeed: optionalNumber(wind.speed, 0), // m/s; optional in provider response
+    windDirection: optionalNumber(wind.deg, 0, 360),
+    windGust: optionalNumber(wind.gust, 0),
+    pressureSurfaceLevel: requiredNumber(main.pressure, 'pressure', 0),
+    cloudCover: requiredNumber(clouds.all, 'cloud cover', 0, 100),
     uvIndex: null, // Not supplied by the free current-weather endpoint
-    visibility: typeof data.visibility === 'number' ? data.visibility / 1000 : null, // m → km
+    visibility: optionalNumber(data.visibility, 0) == null ? null : optionalNumber(data.visibility, 0)! / 1000, // m → km
     dewPoint: null, // Not supplied by the free current-weather endpoint
     precipitationProbability: null, // Current conditions do not include probability of precipitation
-    weatherCode: owmToInternalCode(requiredNumber(weather.id, 'condition code')),
-    rainVolume: data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0,
-    snowVolume: data.snow?.['1h'] ?? data.snow?.['3h'] ?? 0,
-    description: weather.description ?? '',
+    weatherCode: owmToInternalCode(requiredNumber(weather.id, 'condition code', 1, Infinity, true)),
+    rainVolume: optionalNumber(data.rain?.['1h'], 0) ?? optionalNumber(data.rain?.['3h'], 0) ?? 0,
+    snowVolume: optionalNumber(data.snow?.['1h'], 0) ?? optionalNumber(data.snow?.['3h'], 0) ?? 0,
+    description: typeof weather.description === 'string' ? weather.description : '',
     isNight: typeof weather.icon === 'string' && weather.icon.endsWith('n'),
   };
 }
@@ -59,19 +72,21 @@ function mapHourlyItem(item: any): TimelineInterval {
       temperature: requiredNumber(main.temp, 'forecast temperature'),
       temperatureApparent: requiredNumber(main.feels_like, 'forecast feels-like temperature'),
       humidity: requiredNumber(main.humidity, 'forecast humidity'),
-      windSpeed: wind.speed ?? null,
-      windDirection: wind.deg ?? null,
-      windGust: wind.gust ?? null,
-      pressureSurfaceLevel: requiredNumber(main.pressure, 'forecast pressure'),
-      cloudCover: requiredNumber(clouds.all, 'forecast cloud cover'),
+      windSpeed: optionalNumber(wind.speed, 0),
+      windDirection: optionalNumber(wind.deg, 0, 360),
+      windGust: optionalNumber(wind.gust, 0),
+      pressureSurfaceLevel: requiredNumber(main.pressure, 'forecast pressure', 0),
+      cloudCover: requiredNumber(clouds.all, 'forecast cloud cover', 0, 100),
       uvIndex: null,
       visibility: typeof item.visibility === 'number' ? item.visibility / 1000 : null,
       dewPoint: null,
-      precipitationProbability: item.pop == null ? null : Math.round(item.pop * 100),
-      weatherCode: owmToInternalCode(requiredNumber(weather.id, 'forecast condition code')),
-      rainVolume: item.rain?.['3h'] ?? 0,
-      snowVolume: item.snow?.['3h'] ?? 0,
-      description: weather.description ?? '',
+      precipitationProbability: optionalNumber(item.pop, 0, 1) == null
+        ? null
+        : Math.round(optionalNumber(item.pop, 0, 1)! * 100),
+      weatherCode: owmToInternalCode(requiredNumber(weather.id, 'forecast condition code', 1, Infinity, true)),
+      rainVolume: optionalNumber(item.rain?.['3h'], 0) ?? 0,
+      snowVolume: optionalNumber(item.snow?.['3h'], 0) ?? 0,
+      description: typeof weather.description === 'string' ? weather.description : '',
       isNight: (item.sys?.pod === 'n') || (typeof weather.icon === 'string' && weather.icon.endsWith('n')),
     },
   };
@@ -93,18 +108,18 @@ function aggregateDaily(items: any[]): DailyInterval[] {
     if (dailyIntervals.length >= 7) break;
 
     const temps = dayItems.map((d: any) => requiredNumber(d.main?.temp, 'daily temperature'));
-    const humidities = dayItems.map((d: any) => requiredNumber(d.main?.humidity, 'daily humidity'));
-    const winds = dayItems.map((d: any) => d.wind?.speed).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
-    const windDirs = dayItems.map((d: any) => d.wind?.deg).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
+    const humidities = dayItems.map((d: any) => requiredNumber(d.main?.humidity, 'daily humidity', 0, 100));
+    const winds = dayItems.map((d: any) => optionalNumber(d.wind?.speed, 0)).filter((v: number | null): v is number => v != null);
+    const windDirs = dayItems.map((d: any) => optionalNumber(d.wind?.deg, 0, 360)).filter((v: number | null): v is number => v != null);
     const pops = dayItems
       .map((d: any) => d.pop)
-      .filter((value: unknown): value is number => typeof value === 'number' && Number.isFinite(value))
+      .filter((value: unknown): value is number => optionalNumber(value, 0, 1) != null)
       .map((value: number) => Math.round(value * 100));
     // Use the most frequently reported condition. OpenWeather condition IDs
     // are categories, not an ordered severity scale.
     const conditionCounts = new Map<number, number>();
     for (const item of dayItems) {
-      const id = requiredNumber(item.weather?.[0]?.id, 'daily condition code');
+      const id = requiredNumber(item.weather?.[0]?.id, 'daily condition code', 1, Infinity, true);
       conditionCounts.set(id, (conditionCounts.get(id) ?? 0) + 1);
     }
     const dominantId = [...conditionCounts.entries()]
@@ -158,13 +173,13 @@ async function fetchAirQuality(lat: number, lon: number, apiKey: string): Promis
     const item = data.list?.[0];
     if (!item) return undefined;
     return {
-      aqi: item.main?.aqi ?? null,
-      co: item.components?.co ?? null,
-      no2: item.components?.no2 ?? null,
-      o3: item.components?.o3 ?? null,
-      pm2_5: item.components?.pm2_5 ?? null,
-      pm10: item.components?.pm10 ?? null,
-      so2: item.components?.so2 ?? null,
+      aqi: optionalNumber(item.main?.aqi, 1, 5),
+      co: optionalNumber(item.components?.co, 0),
+      no2: optionalNumber(item.components?.no2, 0),
+      o3: optionalNumber(item.components?.o3, 0),
+      pm2_5: optionalNumber(item.components?.pm2_5, 0),
+      pm10: optionalNumber(item.components?.pm10, 0),
+      so2: optionalNumber(item.components?.so2, 0),
     };
   } catch {
     return undefined; // Non-critical — don't fail the whole fetch
