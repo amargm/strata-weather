@@ -96,13 +96,13 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
           barAnim={barAnims[0]}
           color={theme.colors.accent}
           isLeft
-          valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+          valueColor={uvIndex != null && uvIndex >= 6 ? theme.colors.accent : undefined}
           isPro
         />
         {/* Pressure */}
         <MetricCell
           label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
+          value={weather?.pressureSurfaceLevel == null ? '—' : `${Math.round(weather.pressureSurfaceLevel)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
           unit="hPa"
           hint={`Weight of air above you.${pressureTrend === 'falling' ? ' Falling — storms possible.' : pressureTrend === 'rising' ? ' Rising — clearing ahead.' : ''}`}
           barAnim={barAnims[1]}
@@ -112,9 +112,9 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
         {/* Feels Like */}
         <MetricCell
           label="Feels Like"
-          value={`${Math.round(weather?.temperatureApparent ?? 0)}°`}
-          unit={`Dew point ${Math.round(weather?.dewPoint ?? 0)}°C`}
-          hint={(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
+          value={weather?.temperatureApparent == null ? '—' : `${Math.round(weather.temperatureApparent)}°`}
+          unit={`Dew point ${weather?.dewPoint == null ? '—' : `${Math.round(weather.dewPoint)}°C`}`}
+          hint={weather?.dewPoint == null ? 'Dew point is not included in the current free weather response.' : weather.dewPoint > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
           barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
           isLeft
