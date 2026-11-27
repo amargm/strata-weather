@@ -7,13 +7,12 @@ import {
   Animated,
   Easing,
   AccessibilityInfo,
+  useWindowDimensions,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
-
-const ITEM_WIDTH = sw(72);
 
 /** Generate a forecast summary from 3-hour timeline intervals + daily data. */
 function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]): string {
@@ -66,6 +65,8 @@ interface HourlyScreenProps {
 }
 
 export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind, daily }: HourlyScreenProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const itemWidth = Math.max(62, Math.min(88, (windowWidth * 72) / 390));
   const scrollRef = useRef<ScrollView>(null);
 
   const forecastSummary = React.useMemo(
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     paddingRight: sw(20),
   },
   tapeItem: {
-    width: ITEM_WIDTH,
+    width: 72,
     alignItems: 'center',
     paddingVertical: sh(16),
     borderRadius: 0,
