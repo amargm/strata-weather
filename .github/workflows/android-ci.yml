@@ -1,0 +1,74 @@
+name: Android CI
+
+on:
+  push:
+    branches:
+      - main
+      - improve/product-foundation
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+  android-debug:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.1.8937393"
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Configure Android SDK
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew --no-daemon assembleDebug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: strata-weather-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
