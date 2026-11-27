@@ -57,8 +57,8 @@ export function mapCurrentWeather(data: any): WeatherValues {
     dewPoint: null, // Not supplied by the free current-weather endpoint
     precipitationProbability: null, // Current conditions do not include probability of precipitation
     weatherCode: owmToInternalCode(requiredNumber(weather.id, 'condition code', 1, Infinity, true)),
-    rainVolume: optionalNumber(data.rain?.['1h'], 0) ?? optionalNumber(data.rain?.['3h'], 0) ?? 0,
-    snowVolume: optionalNumber(data.snow?.['1h'], 0) ?? optionalNumber(data.snow?.['3h'], 0) ?? 0,
+    rainVolume: optionalNumber(data.rain?.['1h'], 0) ?? optionalNumber(data.rain?.['3h'], 0),
+    snowVolume: optionalNumber(data.snow?.['1h'], 0) ?? optionalNumber(data.snow?.['3h'], 0),
     description: typeof weather.description === 'string' ? weather.description : '',
     isNight: typeof weather.icon === 'string' && weather.icon.endsWith('n'),
   };
@@ -88,8 +88,8 @@ export function mapHourlyItem(item: any): TimelineInterval {
         ? null
         : Math.round(optionalNumber(item.pop, 0, 1)! * 100),
       weatherCode: owmToInternalCode(requiredNumber(weather.id, 'forecast condition code', 1, Infinity, true)),
-      rainVolume: optionalNumber(item.rain?.['3h'], 0) ?? 0,
-      snowVolume: optionalNumber(item.snow?.['3h'], 0) ?? 0,
+      rainVolume: optionalNumber(item.rain?.['3h'], 0),
+      snowVolume: optionalNumber(item.snow?.['3h'], 0),
       description: typeof weather.description === 'string' ? weather.description : '',
       isNight: (item.sys?.pod === 'n') || (typeof weather.icon === 'string' && weather.icon.endsWith('n')),
     },
@@ -329,13 +329,13 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
     },
     sunriseTime: sunriseISO,
     sunsetTime: sunsetISO,
-    dataTimestamp: currentData.dt ? currentData.dt * 1000 : Date.now(),
+    dataTimestamp: optionalNumber(currentData.dt, 0) == null ? undefined : currentData.dt * 1000,
     pressureTrend: computePressureTrend(forecastItems),
     airQuality,
-    timezoneOffset: currentData.timezone ?? 0,
-    cityTempMin: currentData.main?.temp_min,
-    cityTempMax: currentData.main?.temp_max,
-    seaLevelPressure: currentData.main?.sea_level ?? currentData.main?.pressure,
+    timezoneOffset: optionalNumber(currentData.timezone) ?? undefined,
+    cityTempMin: optionalNumber(currentData.main?.temp_min),
+    cityTempMax: optionalNumber(currentData.main?.temp_max),
+    seaLevelPressure: optionalNumber(currentData.main?.sea_level, 0),
     comfortIndex: computeComfortIndex(current.temperature, current.temperatureApparent, current.humidity),
     outdoorScore: computeOutdoorScore(current),
   };
