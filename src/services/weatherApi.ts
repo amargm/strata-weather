@@ -13,8 +13,12 @@ function resolveApiKey(): string {
   return _apiKey || OWM_API_KEY;
 }
 
-function optionalNumber(value: unknown, min = -Infinity, max = Infinity): number | null {
-  return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
+function optionalNumber(value: unknown, min = -Infinity, max = Infinity, integer = false): number | null {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= min &&
+    value <= max &&
+    (!integer || Number.isInteger(value))
     ? value
     : null;
 }
@@ -42,7 +46,7 @@ function mapCurrentWeather(data: any): WeatherValues {
   return {
     temperature: requiredNumber(main.temp, 'temperature'),
     temperatureApparent: requiredNumber(main.feels_like, 'feels-like temperature'),
-    humidity: requiredNumber(main.humidity, 'humidity'),
+    humidity: requiredNumber(main.humidity, 'humidity', 0, 100),
     windSpeed: optionalNumber(wind.speed, 0), // m/s; optional in provider response
     windDirection: optionalNumber(wind.deg, 0, 360),
     windGust: optionalNumber(wind.gust, 0),
@@ -71,7 +75,7 @@ function mapHourlyItem(item: any): TimelineInterval {
     values: {
       temperature: requiredNumber(main.temp, 'forecast temperature'),
       temperatureApparent: requiredNumber(main.feels_like, 'forecast feels-like temperature'),
-      humidity: requiredNumber(main.humidity, 'forecast humidity'),
+      humidity: requiredNumber(main.humidity, 'forecast humidity', 0, 100),
       windSpeed: optionalNumber(wind.speed, 0),
       windDirection: optionalNumber(wind.deg, 0, 360),
       windGust: optionalNumber(wind.gust, 0),
@@ -173,7 +177,7 @@ async function fetchAirQuality(lat: number, lon: number, apiKey: string): Promis
     const item = data.list?.[0];
     if (!item) return undefined;
     return {
-      aqi: optionalNumber(item.main?.aqi, 1, 5),
+      aqi: optionalNumber(item.main?.aqi, 1, 5, true),
       co: optionalNumber(item.components?.co, 0),
       no2: optionalNumber(item.components?.no2, 0),
       o3: optionalNumber(item.components?.o3, 0),
@@ -299,7 +303,10 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
 
   // OpenWeather's free forecast endpoint returns 3-hour intervals, not hourly data.
   // Keep the existing internal property name for compatibility with current screens.
-  const forecastItems = forecastData.list || [];
+  if (!Array.isArray(forecastData.list) || forecastData.list.length === 0) {
+    throw new Error('OpenWeather forecast response contains no forecast entries');
+  }
+  const forecastItems = forecastData.list;
   const hourly = forecastItems.slice(0, 24).map(mapHourlyItem);
 
   // Aggregate to daily
