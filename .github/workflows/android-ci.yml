@@ -32,11 +32,15 @@ jobs:
         run: |
           npm audit --json > npm-audit.json || true
           node -e "const a=require('./npm-audit.json'); console.log('Audit totals:', JSON.stringify(a.metadata?.vulnerabilities || {})); for (const [name, item] of Object.entries(a.vulnerabilities || {})) { const via=(item.via || []).map(v => typeof v === 'string' ? v : v.title + ' [' + v.range + ']'); console.log(item.severity.toUpperCase() + ' ' + name + ': ' + via.join('; ')); }"
-      - name: Upload dependency audit report
+      - name: Preview non-breaking dependency fixes
+        run: npm audit fix --dry-run --json > npm-audit-fix-preview.json || true
+      - name: Upload dependency audit reports
         uses: actions/upload-artifact@v4
         with:
           name: npm-dependency-audit
-          path: npm-audit.json
+          path: |
+            npm-audit.json
+            npm-audit-fix-preview.json
           retention-days: 7
       - name: TypeScript
         run: npx tsc --noEmit
