@@ -39,7 +39,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
     const targets = [
       weather.humidity / 100,
       weather.cloudCover / 100,
-      Math.max(0, Math.min(weather.dewPoint / 40, 1)),
+      weather.dewPoint == null ? 0 : Math.max(0, Math.min(weather.dewPoint / 40, 1)),
       Math.min((weather.visibility || 0) / 20, 1),
     ];
     if (reduceMotion) {
@@ -92,9 +92,9 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         {/* Row 2 */}
         <MetricCell
           label="Dew Point"
-          value={`${Math.round(weather?.dewPoint ?? 0)}°`}
+          value={weather?.dewPoint == null ? '—' : `${Math.round(weather.dewPoint)}°`}
           unit="°C"
-          hint="Air must cool to this temp to form dew. Above 15° feels sticky."
+          hint={weather?.dewPoint == null ? 'Dew point is not included in the current free weather response.' : 'Air must cool to this temp to form dew. Above 15° feels sticky.'}
           barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
           isLeft
