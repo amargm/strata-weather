@@ -183,7 +183,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             return (
               <View
                 key={item.startTime}
-                style={[styles.tapeItem, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
+                style={[styles.tapeItem, { width: itemWidth }, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
                 accessible
                 accessibilityRole="text"
                 accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}${precip == null ? '' : `, ${precip} percent precipitation chance`}${item.values.isNight ? ', nighttime' : ''}`}
