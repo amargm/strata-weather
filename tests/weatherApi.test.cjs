@@ -84,12 +84,14 @@ test('pressure trend ignores missing readings and compares valid observations', 
   assert.equal(computePressureTrend([
     { main: { pressure: 1000 } },
     { main: {} },
+    { main: { pressure: 1002 } },
     { main: { pressure: 1004 } },
   ]), 'rising');
 
   assert.equal(computePressureTrend([
     { main: { pressure: 1004 } },
     { main: {} },
+    { main: { pressure: 1002 } },
     { main: { pressure: 1000 } },
   ]), 'falling');
 });
