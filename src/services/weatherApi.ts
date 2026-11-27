@@ -24,13 +24,13 @@ function mapCurrentWeather(data: any): WeatherValues {
     temperature: main.temp ?? 0,
     temperatureApparent: main.feels_like ?? main.temp ?? 0,
     humidity: main.humidity ?? 0,
-    windSpeed: wind.speed ?? 0,   // m/s
-    windDirection: wind.deg ?? 0,
-    windGust: wind.gust ?? 0,
+    windSpeed: wind.speed ?? null,   // m/s; optional in provider response
+    windDirection: wind.deg ?? null,
+    windGust: wind.gust ?? null,
     pressureSurfaceLevel: main.pressure ?? 1013,
     cloudCover: clouds.all ?? 0,
     uvIndex: null, // Not supplied by the free current-weather endpoint
-    visibility: (data.visibility ?? 10000) / 1000, // m → km
+    visibility: typeof data.visibility === 'number' ? data.visibility / 1000 : null, // m → km
     dewPoint: null, // Not supplied by the free current-weather endpoint
     precipitationProbability: null, // Current conditions do not include probability of precipitation
     weatherCode: owmToInternalCode(weather.id ?? 800),
@@ -53,13 +53,13 @@ function mapHourlyItem(item: any): TimelineInterval {
       temperature: main.temp ?? 0,
       temperatureApparent: main.feels_like ?? main.temp ?? 0,
       humidity: main.humidity ?? 0,
-      windSpeed: wind.speed ?? 0,
-      windDirection: wind.deg ?? 0,
-      windGust: wind.gust ?? 0,
+      windSpeed: wind.speed ?? null,
+      windDirection: wind.deg ?? null,
+      windGust: wind.gust ?? null,
       pressureSurfaceLevel: main.pressure ?? 1013,
       cloudCover: clouds.all ?? 0,
       uvIndex: null,
-      visibility: (item.visibility ?? 10000) / 1000,
+      visibility: typeof item.visibility === 'number' ? item.visibility / 1000 : null,
       dewPoint: null,
       precipitationProbability: item.pop == null ? null : Math.round(item.pop * 100),
       weatherCode: owmToInternalCode(weather.id ?? 800),
@@ -88,8 +88,8 @@ function aggregateDaily(items: any[]): DailyInterval[] {
 
     const temps = dayItems.map((d: any) => d.main?.temp ?? 0);
     const humidities = dayItems.map((d: any) => d.main?.humidity ?? 0);
-    const winds = dayItems.map((d: any) => d.wind?.speed ?? 0);
-    const windDirs = dayItems.map((d: any) => d.wind?.deg ?? 0);
+    const winds = dayItems.map((d: any) => d.wind?.speed).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
+    const windDirs = dayItems.map((d: any) => d.wind?.deg).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
     const pops = dayItems
       .map((d: any) => d.pop)
       .filter((value: unknown): value is number => typeof value === 'number' && Number.isFinite(value))
@@ -110,8 +110,8 @@ function aggregateDaily(items: any[]): DailyInterval[] {
         temperatureMax: Math.max(...temps),
         temperatureMin: Math.min(...temps),
         humidity: Math.round(humidities.reduce((a: number, b: number) => a + b, 0) / humidities.length),
-        windSpeed: Math.max(...winds),
-        windDirection: Math.round(windDirs.reduce((a: number, b: number) => a + b, 0) / windDirs.length),
+        windSpeed: winds.length ? Math.max(...winds) : null,
+        windDirection: windDirs.length ? Math.round((((Math.atan2(windDirs.reduce((sum: number, deg: number) => sum + Math.sin(deg * Math.PI / 180), 0), windDirs.reduce((sum: number, deg: number) => sum + Math.cos(deg * Math.PI / 180), 0)) * 180 / Math.PI) + 360) % 360)) : null,
         precipitationProbability: pops.length ? Math.max(...pops) : null,
         weatherCode: owmToInternalCode(dominantId),
         uvIndex: null,
@@ -151,13 +151,13 @@ async function fetchAirQuality(lat: number, lon: number, apiKey: string): Promis
     const item = data.list?.[0];
     if (!item) return undefined;
     return {
-      aqi: item.main?.aqi ?? 1,
-      co: item.components?.co ?? 0,
-      no2: item.components?.no2 ?? 0,
-      o3: item.components?.o3 ?? 0,
-      pm2_5: item.components?.pm2_5 ?? 0,
-      pm10: item.components?.pm10 ?? 0,
-      so2: item.components?.so2 ?? 0,
+      aqi: item.main?.aqi ?? null,
+      co: item.components?.co ?? null,
+      no2: item.components?.no2 ?? null,
+      o3: item.components?.o3 ?? null,
+      pm2_5: item.components?.pm2_5 ?? null,
+      pm10: item.components?.pm10 ?? null,
+      so2: item.components?.so2 ?? null,
     };
   } catch {
     return undefined; // Non-critical — don't fail the whole fetch
@@ -182,15 +182,19 @@ function computeOutdoorScore(weather: WeatherValues): number {
     else if (weather.precipitationProbability > 30) score -= 1;
   }
   // Wind penalty
-  const windKmh = weather.windSpeed * 3.6;
-  if (windKmh > 40) score -= 3;
-  else if (windKmh > 25) score -= 1;
+  if (weather.windSpeed != null) {
+    const windKmh = weather.windSpeed * 3.6;
+    if (windKmh > 40) score -= 3;
+    else if (windKmh > 25) score -= 1;
+  }
   // Temperature penalty (too hot or cold)
   if (weather.temperature > 38 || weather.temperature < 0) score -= 3;
   else if (weather.temperature > 34 || weather.temperature < 5) score -= 1;
   // Visibility penalty
-  if (weather.visibility < 1) score -= 2;
-  else if (weather.visibility < 5) score -= 1;
+  if (weather.visibility != null) {
+    if (weather.visibility < 1) score -= 2;
+    else if (weather.visibility < 5) score -= 1;
+  }
   // UV penalty
   if (weather.uvIndex != null && weather.uvIndex > 10) score -= 1;
   return Math.max(0, Math.min(10, score));
