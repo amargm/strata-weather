@@ -38,7 +38,7 @@ function requiredNumber(
 }
 
 /** Map OWM current weather response to internal WeatherValues */
-function mapCurrentWeather(data: any): WeatherValues {
+export function mapCurrentWeather(data: any): WeatherValues {
   const main = data.main || {};
   const wind = data.wind || {};
   const clouds = data.clouds || {};
@@ -65,7 +65,7 @@ function mapCurrentWeather(data: any): WeatherValues {
 }
 
 /** Map one OpenWeather 5-day/3-hour forecast item to a timeline interval. */
-function mapHourlyItem(item: any): TimelineInterval {
+export function mapHourlyItem(item: any): TimelineInterval {
   const main = item.main || {};
   const wind = item.wind || {};
   const clouds = item.clouds || {};
@@ -82,7 +82,7 @@ function mapHourlyItem(item: any): TimelineInterval {
       pressureSurfaceLevel: requiredNumber(main.pressure, 'forecast pressure', 0),
       cloudCover: requiredNumber(clouds.all, 'forecast cloud cover', 0, 100),
       uvIndex: null,
-      visibility: typeof item.visibility === 'number' ? item.visibility / 1000 : null,
+      visibility: optionalNumber(item.visibility, 0) == null ? null : optionalNumber(item.visibility, 0)! / 1000,
       dewPoint: null,
       precipitationProbability: optionalNumber(item.pop, 0, 1) == null
         ? null
@@ -97,7 +97,7 @@ function mapHourlyItem(item: any): TimelineInterval {
 }
 
 /** Aggregate 3-hour forecast items into daily intervals */
-function aggregateDaily(items: any[]): DailyInterval[] {
+export function aggregateDaily(items: any[]): DailyInterval[] {
   const dayMap = new Map<string, any[]>();
 
   for (const item of items) {
@@ -151,7 +151,7 @@ function aggregateDaily(items: any[]): DailyInterval[] {
 }
 
 /** Compute pressure trend from 3-hour forecast items */
-function computePressureTrend(items: any[]): 'rising' | 'falling' | 'steady' {
+export function computePressureTrend(items: any[]): 'rising' | 'falling' | 'steady' {
   if (items.length < 3) return 'steady';
   // Compare first 3 items (~9h) pressure trend
   const pressures = items.slice(0, 4)
