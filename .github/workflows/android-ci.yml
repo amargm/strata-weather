@@ -5,9 +5,6 @@ on:
     branches:
       - main
       - improve/product-foundation
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -37,6 +34,7 @@ jobs:
   android-debug:
     name: Android debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Check out source
         uses: actions/checkout@v4
