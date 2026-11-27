@@ -156,9 +156,9 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
         </View>
         <View style={styles.windBadge}>
           <Text style={styles.windBadgeVal}>
-            {Math.round((currentWind?.windSpeed ?? 0) * 3.6)}
+            {currentWind?.windSpeed == null ? '—' : Math.round(currentWind.windSpeed * 3.6)}
           </Text>
-          <Text style={styles.windBadgeUnit}>km/h {windDirText(currentWind?.windDirection ?? 0)}</Text>
+          <Text style={styles.windBadgeUnit}>{currentWind?.windSpeed == null ? 'Wind unavailable' : `km/h ${currentWind.windDirection == null ? 'direction unavailable' : windDirText(currentWind.windDirection)}`}</Text>
         </View>
       </View>
 
