@@ -1,6 +1,5 @@
 import { API_BASE_URL, owmToInternalCode } from '../utils/constants';
 import { WeatherData, WeatherValues, TimelineInterval, DailyInterval, DailyValues, LocationCoords, AirQuality, GeocodingResult } from '../types/weather';
-import { NativeModules, Platform } from 'react-native';
 
 // API key — hardcoded for now, move to env/native module for production
 const OWM_API_KEY = 'b12d9d74859cdcec7792ce8c6fe319f1';
@@ -14,6 +13,13 @@ function resolveApiKey(): string {
   return _apiKey || OWM_API_KEY;
 }
 
+function requiredNumber(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error('OpenWeather response is missing a valid ' + field);
+  }
+  return value;
+}
+
 /** Map OWM current weather response to internal WeatherValues */
 function mapCurrentWeather(data: any): WeatherValues {
   const main = data.main || {};
@@ -21,19 +27,19 @@ function mapCurrentWeather(data: any): WeatherValues {
   const clouds = data.clouds || {};
   const weather = data.weather?.[0] || {};
   return {
-    temperature: main.temp ?? 0,
-    temperatureApparent: main.feels_like ?? main.temp ?? 0,
-    humidity: main.humidity ?? 0,
+    temperature: requiredNumber(main.temp, 'temperature'),
+    temperatureApparent: requiredNumber(main.feels_like, 'feels-like temperature'),
+    humidity: requiredNumber(main.humidity, 'humidity'),
     windSpeed: wind.speed ?? null,   // m/s; optional in provider response
     windDirection: wind.deg ?? null,
     windGust: wind.gust ?? null,
-    pressureSurfaceLevel: main.pressure ?? 1013,
-    cloudCover: clouds.all ?? 0,
+    pressureSurfaceLevel: requiredNumber(main.pressure, 'pressure'),
+    cloudCover: requiredNumber(clouds.all, 'cloud cover'),
     uvIndex: null, // Not supplied by the free current-weather endpoint
     visibility: typeof data.visibility === 'number' ? data.visibility / 1000 : null, // m → km
     dewPoint: null, // Not supplied by the free current-weather endpoint
     precipitationProbability: null, // Current conditions do not include probability of precipitation
-    weatherCode: owmToInternalCode(weather.id ?? 800),
+    weatherCode: owmToInternalCode(requiredNumber(weather.id, 'condition code')),
     rainVolume: data.rain?.['1h'] ?? data.rain?.['3h'] ?? 0,
     snowVolume: data.snow?.['1h'] ?? data.snow?.['3h'] ?? 0,
     description: weather.description ?? '',
@@ -86,8 +92,8 @@ function aggregateDaily(items: any[]): DailyInterval[] {
   for (const [date, dayItems] of dayMap) {
     if (dailyIntervals.length >= 7) break;
 
-    const temps = dayItems.map((d: any) => d.main?.temp ?? 0);
-    const humidities = dayItems.map((d: any) => d.main?.humidity ?? 0);
+    const temps = dayItems.map((d: any) => requiredNumber(d.main?.temp, 'daily temperature'));
+    const humidities = dayItems.map((d: any) => requiredNumber(d.main?.humidity, 'daily humidity'));
     const winds = dayItems.map((d: any) => d.wind?.speed).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
     const windDirs = dayItems.map((d: any) => d.wind?.deg).filter((v: unknown): v is number => typeof v === 'number' && Number.isFinite(v));
     const pops = dayItems
@@ -98,11 +104,12 @@ function aggregateDaily(items: any[]): DailyInterval[] {
     // are categories, not an ordered severity scale.
     const conditionCounts = new Map<number, number>();
     for (const item of dayItems) {
-      const id = item.weather?.[0]?.id ?? 800;
+      const id = requiredNumber(item.weather?.[0]?.id, 'daily condition code');
       conditionCounts.set(id, (conditionCounts.get(id) ?? 0) + 1);
     }
     const dominantId = [...conditionCounts.entries()]
-      .sort((a, b) => b[1] - a[1])[0]?.[0] ?? 800;
+      .sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (dominantId == null) throw new Error('OpenWeather forecast day has no condition readings');
 
     dailyIntervals.push({
       startTime: `${date}T12:00:00Z`,
