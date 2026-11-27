@@ -7,10 +7,10 @@ export interface WeatherValues {
   windGust: number;
   pressureSurfaceLevel: number;
   cloudCover: number;
-  uvIndex: number;
+  uvIndex: number | null;
   visibility: number;
-  dewPoint: number;
-  precipitationProbability: number;
+  dewPoint: number | null;
+  precipitationProbability: number | null;
   weatherCode: number;
   rainVolume?: number;
   snowVolume?: number;
