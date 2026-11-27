@@ -94,5 +94,5 @@ export function useWeather(coords: LocationCoords | null): UseWeatherReturn {
     longitude: data.location.lon,
   }) ? data : null;
 
-  return { data: visibleData, loading: loading || (!!coords && !visibleData), error, refresh: fetchData };
+  return { data: visibleData, loading, error, refresh: fetchData };
 }
