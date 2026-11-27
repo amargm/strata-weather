@@ -7,30 +7,29 @@ import {
   Animated,
   Easing,
   AccessibilityInfo,
+  useWindowDimensions,
 } from 'react-native';
 import { theme } from '../utils/theme';
 import { WEATHER_CODES, DAYS, MONTHS } from '../utils/constants';
 import { TimelineInterval, WeatherValues, DailyInterval } from '../types/weather';
 import { getStatusBarPadding, sw, ms, sh } from '../utils/responsive';
 
-const ITEM_WIDTH = sw(72);
-
-/** Generate a poetic forecast summary from hourly + daily data */
+/** Generate a forecast summary from 3-hour timeline intervals + daily data. */
 function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]): string {
   if (!hourly.length && !daily.length) return '';
 
   const nextRainHour = hourly.findIndex(
-    (h, i) => i > 0 && h.values.precipitationProbability > 40,
+    (h, i) => i > 0 && h.values.precipitationProbability != null && h.values.precipitationProbability > 40,
   );
   const todayHi = daily[0]?.values.temperatureMax;
   const todayLo = daily[0]?.values.temperatureMin;
   const tomorrowCode = daily[1]?.values.weatherCode;
   const tomorrowCond = tomorrowCode ? WEATHER_CODES[tomorrowCode]?.label : null;
 
-  // Rain incoming within 6 hours
-  if (nextRainHour > 0 && nextRainHour <= 6) {
-    const hrs = nextRainHour;
-    return `Rain likely in ${hrs === 1 ? 'about an hour' : `${hrs} hours`}. Plan accordingly.`;
+  // Each item represents a 3-hour interval from OpenWeather's free endpoint.
+  if (nextRainHour > 0 && nextRainHour <= 2) {
+    const hrs = nextRainHour * 3;
+    return `Rain likely in about ${hrs} hours. Plan accordingly.`;
   }
 
   // Big temp swing today
@@ -48,7 +47,7 @@ function getForecastSummary(hourly: TimelineInterval[], daily: DailyInterval[]):
   }
 
   // Dry streak
-  const dryDays = daily.filter(d => d.values.precipitationProbability < 20).length;
+  const dryDays = daily.filter(d => d.values.precipitationProbability != null && d.values.precipitationProbability < 20).length;
   if (dryDays >= 5) {
     return `${dryDays} dry days ahead. The sky is in a generous mood.`;
   }
@@ -66,6 +65,8 @@ interface HourlyScreenProps {
 }
 
 export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWind, daily }: HourlyScreenProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const itemWidth = Math.max(62, Math.min(88, (windowWidth * 72) / 390));
   const scrollRef = useRef<ScrollView>(null);
 
   const forecastSummary = React.useMemo(
@@ -152,17 +153,17 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
       <View style={styles.header} accessible accessibilityRole="header">
         <View>
           <Text style={styles.eyebrow}>Layer 02 · Timeline</Text>
-          <Text style={styles.title}>Hours & Days</Text>
+          <Text style={styles.title}>3-hour outlook</Text>
         </View>
         <View style={styles.windBadge}>
           <Text style={styles.windBadgeVal}>
-            {Math.round((currentWind?.windSpeed ?? 0) * 3.6)}
+            {currentWind?.windSpeed == null ? '—' : Math.round(currentWind.windSpeed * 3.6)}
           </Text>
-          <Text style={styles.windBadgeUnit}>km/h {windDirText(currentWind?.windDirection ?? 0)}</Text>
+          <Text style={styles.windBadgeUnit}>{currentWind?.windSpeed == null ? 'Wind unavailable' : `km/h ${currentWind.windDirection == null ? 'direction unavailable' : windDirText(currentWind.windDirection)}`}</Text>
         </View>
       </View>
 
-      {/* Compact hourly tape */}
+      {/* Compact 3-hour forecast tape */}
       <View style={styles.tapeSection}>
         <ScrollView
           ref={scrollRef}
@@ -171,7 +172,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
           contentContainerStyle={styles.tapeContent}
           style={styles.tape}
           accessibilityRole="list"
-          accessibilityLabel="Hourly forecast timeline"
+          accessibilityLabel="Forecast timeline in 3-hour intervals"
         >
           {hourly.map((item, index) => {
             const code = item.values.weatherCode;
@@ -182,10 +183,10 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
             return (
               <View
                 key={item.startTime}
-                style={[styles.tapeItem, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
+                style={[styles.tapeItem, { width: itemWidth }, isNow && styles.tapeItemNow, item.values.isNight && styles.tapeItemNight]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}, ${precip} percent precipitation chance${item.values.isNight ? ', nighttime' : ''}`}
+                accessibilityLabel={`${formatHour(item.startTime, index)}, ${Math.round(item.values.temperature)} degrees, ${condition.label}${precip == null ? '' : `, ${precip} percent precipitation chance`}${item.values.isNight ? ', nighttime' : ''}`}
               >
                 <Text style={[styles.tapeHr, isNow && styles.tapeTextLight]}>
                   {formatHour(item.startTime, index)}
@@ -195,12 +196,12 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 <Text style={[styles.tapeTemp, isNow && styles.tapeTextLight]}>
                   {Math.round(item.values.temperature)}°
                 </Text>
-                {precip > 0 && (
+                {precip != null && precip > 0 && (
                   <View style={styles.tapePrecipBar}>
                     <View style={[styles.tapePrecipFill, { height: `${Math.min(precip, 100)}%` }]} />
                   </View>
                 )}
-                {precip > 0 && (
+                {precip != null && precip > 0 && (
                   <Text style={[styles.tapePrecip, isNow && styles.tapePrecipLight]}>
                     {precip}%
                   </Text>
@@ -256,7 +257,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
                 ]}
                 accessible
                 accessibilityRole="text"
-                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}.${precip > 0 ? ` ${precip} percent precipitation.` : ''}`}
+                accessibilityLabel={`${formatDay(day.startTime, index)}, ${formatDate(day.startTime)}. ${condition.label}. High ${Math.round(day.values.temperatureMax)}, Low ${Math.round(day.values.temperatureMin)}.${precip != null && precip > 0 ? ` ${precip} percent precipitation.` : ''}`}
               >
                 {/* Day + date */}
                 <View style={styles.dayCol}>
@@ -290,7 +291,7 @@ export const HourlyScreen = React.memo(function HourlyScreen({ hourly, currentWi
 
                 {/* Precip */}
                 <View style={styles.precipCol}>
-                  {precip > 0 ? (
+                  {precip != null && precip > 0 ? (
                     <Text style={styles.fcPrecip}>{precip}%</Text>
                   ) : null}
                 </View>
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     paddingRight: sw(20),
   },
   tapeItem: {
-    width: ITEM_WIDTH,
+    width: 72,
     alignItems: 'center',
     paddingVertical: sh(16),
     borderRadius: 0,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler, Linking } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
 import { ProOverlay } from '../components/ProBadge';
@@ -33,13 +33,13 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
     return () => sub.remove();
   }, []);
 
-  const uvIndex = weather?.uvIndex ?? 0;
-  const uvLabel = uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
+  const uvIndex = weather?.uvIndex ?? null;
+  const uvLabel = uvIndex == null ? 'Unavailable' : uvIndex <= 2 ? 'Low' : uvIndex <= 5 ? 'Moderate' : uvIndex <= 7 ? 'High' : 'Very High';
 
   useEffect(() => {
     if (!weather) return;
     const targets = [
-      Math.min(uvIndex / 11, 1),
+      uvIndex == null ? 0 : Math.min(uvIndex / 11, 1),
       Math.max(0, Math.min((weather.pressureSurfaceLevel - 950) / 100, 1)),
       Math.max(0, Math.min((weather.temperatureApparent + 10) / 60, 1)),
     ];
@@ -90,19 +90,19 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
         {/* UV Index */}
         <MetricCell
           label="UV Index"
-          value={`${uvIndex}`}
+          value={uvIndex == null ? '—' : `${uvIndex}`}
           unit={uvLabel}
-          hint={uvIndex >= 6 ? 'Wear sunscreen — burns in under 20 min.' : 'Sun exposure is manageable right now.'}
+          hint={uvIndex == null ? 'UV data is not included in the current free weather response.' : uvIndex >= 6 ? 'Wear sunscreen — UV exposure is high.' : 'Check local guidance for sun protection.'}
           barAnim={barAnims[0]}
           color={theme.colors.accent}
           isLeft
-          valueColor={uvIndex >= 6 ? theme.colors.accent : undefined}
+          valueColor={uvIndex != null && uvIndex >= 6 ? theme.colors.accent : undefined}
           isPro
         />
         {/* Pressure */}
         <MetricCell
           label="Pressure"
-          value={`${Math.round(weather?.pressureSurfaceLevel ?? 0)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
+          value={weather?.pressureSurfaceLevel == null ? '—' : `${Math.round(weather.pressureSurfaceLevel)}${pressureTrend ? ' ' + TREND_ARROW[pressureTrend] : ''}`}
           unit="hPa"
           hint={`Weight of air above you.${pressureTrend === 'falling' ? ' Falling — storms possible.' : pressureTrend === 'rising' ? ' Rising — clearing ahead.' : ''}`}
           barAnim={barAnims[1]}
@@ -112,9 +112,9 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
         {/* Feels Like */}
         <MetricCell
           label="Feels Like"
-          value={`${Math.round(weather?.temperatureApparent ?? 0)}°`}
-          unit={`Dew point ${Math.round(weather?.dewPoint ?? 0)}°C`}
-          hint={(weather?.dewPoint ?? 0) > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
+          value={weather?.temperatureApparent == null ? '—' : `${Math.round(weather.temperatureApparent)}°`}
+          unit={`Dew point ${weather?.dewPoint == null ? '—' : `${Math.round(weather.dewPoint)}°C`}`}
+          hint={weather?.dewPoint == null ? 'Dew point is not included in the current free weather response.' : weather.dewPoint > 15 ? 'Muggy — sweat won\'t evaporate easily.' : 'Comfortable moisture level.'}
           barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
           isLeft
@@ -194,6 +194,17 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
             <Text style={styles.actionLabel}>Close App</Text>
           </TouchableOpacity>
         </View>
+
+        {/* OpenWeather attribution: keep visible and link to the provider. */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://openweathermap.org/')}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Weather data provided by OpenWeather. Visit OpenWeather website."
+          style={styles.attributionLink}
+        >
+          <Text style={styles.attributionText}>Weather data provided by OpenWeather ↗</Text>
+        </TouchableOpacity>
 
         {/* App branding */}
         <Text style={styles.brandMark}>Strata · Weather, felt.</Text>
@@ -473,6 +484,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.45)',
+  },
+
+  attributionLink: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+  },
+  attributionText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.58)',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
 
   /* Brand mark */

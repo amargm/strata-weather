@@ -2,18 +2,18 @@ export interface WeatherValues {
   temperature: number;
   temperatureApparent: number;
   humidity: number;
-  windSpeed: number;
-  windDirection: number;
-  windGust: number;
+  windSpeed: number | null;
+  windDirection: number | null;
+  windGust: number | null;
   pressureSurfaceLevel: number;
   cloudCover: number;
-  uvIndex: number;
-  visibility: number;
-  dewPoint: number;
-  precipitationProbability: number;
+  uvIndex: number | null;
+  visibility: number | null;
+  dewPoint: number | null;
+  precipitationProbability: number | null;
   weatherCode: number;
-  rainVolume?: number;
-  snowVolume?: number;
+  rainVolume?: number | null;
+  snowVolume?: number | null;
   description?: string;
   isNight?: boolean;
 }
@@ -27,11 +27,11 @@ export interface DailyValues {
   temperatureMax: number;
   temperatureMin: number;
   humidity: number;
-  windSpeed: number;
-  windDirection: number;
-  precipitationProbability: number;
+  windSpeed: number | null;
+  windDirection: number | null;
+  precipitationProbability: number | null;
   weatherCode: number;
-  uvIndex: number;
+  uvIndex: number | null;
   sunriseTime: string;
   sunsetTime: string;
 }
@@ -42,13 +42,13 @@ export interface DailyInterval {
 }
 
 export interface AirQuality {
-  aqi: number; // 1-5 (Good, Fair, Moderate, Poor, Very Poor)
-  co: number;
-  no2: number;
-  o3: number;
-  pm2_5: number;
-  pm10: number;
-  so2: number;
+  aqi: number | null; // 1-5 (Good, Fair, Moderate, Poor, Very Poor)
+  co: number | null;
+  no2: number | null;
+  o3: number | null;
+  pm2_5: number | null;
+  pm10: number | null;
+  so2: number | null;
 }
 
 export interface WeatherData {

@@ -1,0 +1,143 @@
+name: Android CI
+
+on:
+  push:
+    branches:
+      - main
+      - improve/product-foundation
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Collect dependency audit report
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e "const a=require('./npm-audit.json'); console.log('Audit totals:', JSON.stringify(a.metadata?.vulnerabilities || {})); for (const [name, item] of Object.entries(a.vulnerabilities || {})) { const via=(item.via || []).map(v => typeof v === 'string' ? v : v.title + ' [' + v.range + ']'); console.log(item.severity.toUpperCase() + ' ' + name + ': ' + via.join('; ')); }"
+      - name: Preview non-breaking dependency fixes
+        run: npm audit fix --dry-run --json > npm-audit-fix-preview.json || true
+      - name: Apply non-breaking dependency fixes
+        # npm exits non-zero while any advisories remain, even after applying
+        # all compatible fixes. The following audit step records the remainder.
+        run: npm audit fix || true
+      - name: Audit remaining dependency vulnerabilities
+        run: |
+          npm audit --json > npm-audit-after-fix.json || true
+          node -e "const a=require('./npm-audit-after-fix.json'); console.log('Remaining audit totals:', JSON.stringify(a.metadata?.vulnerabilities || {}));"
+      - name: Upload dependency audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-dependency-audit
+          path: |
+            npm-audit.json
+            npm-audit-fix-preview.json
+            npm-audit-after-fix.json
+          retention-days: 7
+      - name: Upload lockfile with non-breaking fixes
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package-lock-safe-fixes
+          path: package-lock.json
+          retention-days: 7
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Weather provider regression tests
+        run: npm test
+
+  android-debug:
+    name: Android standalone QA APK
+    needs: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.1.8937393"
+      - name: Download verified dependency lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package-lock-safe-fixes
+          path: .
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Configure Android SDK
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > android/local.properties
+      - name: Build standalone QA release APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew --no-daemon clean assembleRelease
+      - name: Upload standalone QA release APK
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: strata-weather-qa-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  commit-safe-lockfile:
+    name: Commit verified non-breaking lockfile updates
+    if: github.ref == 'refs/heads/improve/product-foundation'
+    needs: android-debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tested branch revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: true
+      - name: Download tested lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package-lock-safe-fixes
+          path: .lockfile-artifact
+      - name: Verify lockfile matches package manifest
+        run: |
+          cp .lockfile-artifact/package-lock.json package-lock.json
+          npm ci
+      - name: Commit lockfile if changed
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "No compatible dependency updates to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: apply non-breaking dependency fixes"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

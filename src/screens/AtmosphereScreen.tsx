@@ -39,7 +39,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
     const targets = [
       weather.humidity / 100,
       weather.cloudCover / 100,
-      Math.max(0, Math.min(weather.dewPoint / 40, 1)),
+      weather.dewPoint == null ? 0 : Math.max(0, Math.min(weather.dewPoint / 40, 1)),
       Math.min((weather.visibility || 0) / 20, 1),
     ];
     if (reduceMotion) {
@@ -92,18 +92,18 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         {/* Row 2 */}
         <MetricCell
           label="Dew Point"
-          value={`${Math.round(weather?.dewPoint ?? 0)}°`}
+          value={weather?.dewPoint == null ? '—' : `${Math.round(weather.dewPoint)}°`}
           unit="°C"
-          hint="Air must cool to this temp to form dew. Above 15° feels sticky."
+          hint={weather?.dewPoint == null ? 'Dew point is not included in the current free weather response.' : 'Air must cool to this temp to form dew. Above 15° feels sticky.'}
           barAnim={barAnims[2]}
           color="rgba(240,235,225,0.4)"
           isLeft
         />
         <MetricCell
           label="Visibility"
-          value={`${Math.round(weather?.visibility ?? 0)}`}
+          value={weather?.visibility == null ? '—' : `${Math.round(weather.visibility)}`}
           unit="km"
-          hint="How far you can see clearly right now."
+          hint={weather?.visibility == null ? 'Visibility is not available in this response.' : 'How far you can see clearly right now.'}
           barAnim={barAnims[3]}
           color="rgba(240,235,225,0.4)"
           isLeft={false}
@@ -111,7 +111,7 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       </View>
 
       {/* Precipitation & wind data strip */}
-      {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0 || (weather?.windSpeed ?? 0) > 0) && (
+      {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0 || weather?.windSpeed != null) && (
         <View style={styles.dataStrip}>
           {(weather?.rainVolume ?? 0) > 0 && (
             <View style={styles.dataChip}>
@@ -127,11 +127,11 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
               <Text style={styles.dataChipLabel}>Snow (1h)</Text>
             </View>
           )}
-          {(weather?.windSpeed ?? 0) > 0 && (
+          {weather?.windSpeed != null && (
             <View style={styles.dataChip}>
               <Text style={styles.dataChipIcon}>W</Text>
               <Text style={styles.dataChipVal}>{Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h</Text>
-              <Text style={styles.dataChipLabel}>{getWindDir(weather?.windDirection ?? 0)}</Text>
+              <Text style={styles.dataChipLabel}>{weather?.windDirection == null ? 'Direction unavailable' : getWindDir(weather.windDirection)}</Text>
             </View>
           )}
           {weather?.description ? (
@@ -145,30 +145,30 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
       )}
 
       {/* Wind compass */}
-      {(weather?.windSpeed ?? 0) > 0 && (
+      {(weather?.windSpeed ?? 0) > 0 && weather?.windDirection != null && (
         <View style={styles.compassSection}>
           <View style={styles.compassContainer}>
             <View style={styles.compassRing}>
               <Text style={styles.compassN}>N</Text>
-              <View style={[styles.compassNeedle, { transform: [{ rotate: `${weather?.windDirection ?? 0}deg` }] }]}>
+              <View style={[styles.compassNeedle, { transform: [{ rotate: `${weather.windDirection}deg` }] }]}>
                 <View style={styles.needleArrow} />
               </View>
             </View>
             <Text style={styles.compassLabel}>
-              {getWindDir(weather?.windDirection ?? 0)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
+              {getWindDir(weather.windDirection)} · {Math.round((weather?.windSpeed ?? 0) * 3.6)} km/h
             </Text>
           </View>
         </View>
       )}
 
       {/* Wind gust alert */}
-      {(weather?.windGust || 0) > 15 && (
-        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round((weather?.windGust || 0) * 3.6)} kilometers per hour expected`}>
+      {weather?.windGust != null && weather.windGust > 15 && (
+        <View style={styles.alertStrip} accessible accessibilityRole="alert" accessibilityLabel={`Wind Advisory. Gusts to ${Math.round(weather.windGust * 3.6)} kilometers per hour expected`}>
           <Text style={styles.alertIcon} importantForAccessibility="no">!</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.alertTitle}>Wind Advisory</Text>
             <Text style={styles.alertBody}>
-              Gusts to {Math.round((weather?.windGust || 0) * 3.6)} km/h expected. Secure loose objects.
+              Gusts to {Math.round(weather.windGust * 3.6)} km/h expected. Secure loose objects.
             </Text>
           </View>
         </View>
@@ -179,13 +179,13 @@ export const AtmosphereScreen = React.memo(function AtmosphereScreen({ weather, 
         <View style={styles.aqiSection}>
           <Text style={styles.aqiTitle}>Air Quality</Text>
           <View style={styles.aqiRow}>
-            <View style={[styles.aqiBadge, { backgroundColor: AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
-              <Text style={styles.aqiBadgeNum}>{airQuality.aqi}</Text>
+            <View style={[styles.aqiBadge, { backgroundColor: airQuality.aqi == null ? '#888' : AQI_LABELS[airQuality.aqi]?.color ?? '#888' }]}>
+              <Text style={styles.aqiBadgeNum}>{airQuality.aqi == null ? '—' : airQuality.aqi}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.aqiLabel}>{AQI_LABELS[airQuality.aqi]?.label ?? 'Unknown'}</Text>
+              <Text style={styles.aqiLabel}>{airQuality.aqi == null ? 'AQI unavailable' : AQI_LABELS[airQuality.aqi]?.label ?? 'Unknown'}</Text>
               <Text style={styles.aqiDetail}>
-                PM2.5 {airQuality.pm2_5.toFixed(1)} · PM10 {airQuality.pm10.toFixed(1)} · O₃ {airQuality.o3.toFixed(1)}
+                PM2.5 {airQuality.pm2_5 == null ? '—' : airQuality.pm2_5.toFixed(1)} · PM10 {airQuality.pm10 == null ? '—' : airQuality.pm10.toFixed(1)} · O₃ {airQuality.o3 == null ? '—' : airQuality.o3.toFixed(1)}
               </Text>
             </View>
           </View>

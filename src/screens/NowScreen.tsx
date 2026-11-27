@@ -6,7 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   AccessibilityInfo,
-  Dimensions,
+  useWindowDimensions,
   Easing,
 } from 'react-native';
 import { theme } from '../utils/theme';
@@ -15,8 +15,6 @@ import { WeatherValues } from '../types/weather';
 import { WeatherEffects } from '../components/WeatherEffects';
 import { ProBadge } from '../components/ProBadge';
 import { sh, sw, ms, getStatusBarPadding } from '../utils/responsive';
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 interface NowScreenProps {
   weather: WeatherValues | null;
@@ -78,6 +76,8 @@ function getFreshness(ts?: number): string | null {
 }
 
 export const NowScreen = React.memo(function NowScreen({ weather, locationName, highTemp, lowTemp, expressiveDescription, seasonalColors, onRefresh, sunriseTime, sunsetTime, dataTimestamp, comfortIndex, outdoorScore, timezoneOffset, cityTempMin, cityTempMax, onCitySearch, isCustomLocation, onResetLocation }: NowScreenProps) {
+  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
+  const temperatureFontSize = Math.max(56, Math.min(ms(120, 0.4), SCREEN_H * 0.17, SCREEN_W * 0.34));
   const [reduceMotion, setReduceMotion] = React.useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -336,9 +336,9 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
           </View>
           <Text style={styles.liveHint}>Moisture in air</Text>
         </Animated.View>
-        <Animated.View style={[styles.liveItem, { opacity: liveItem2, transform: [{ translateX: liveItem2.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Wind ${Math.round((weather?.windSpeed || 0) * 3.6)} kilometers per hour`}>
+        <Animated.View style={[styles.liveItem, { opacity: liveItem2, transform: [{ translateX: liveItem2.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]} accessible accessibilityLabel={`Wind ${weather?.windSpeed == null ? 'unavailable' : `${Math.round(weather.windSpeed * 3.6)} kilometers per hour`}`}>
           <View style={styles.liveRow}>
-            <Text style={styles.liveVal}>{Math.round((weather?.windSpeed || 0) * 3.6)}km/h</Text>
+            <Text style={styles.liveVal}>{weather?.windSpeed == null ? '—' : `${Math.round(weather.windSpeed * 3.6)}km/h`}</Text>
             <Text style={styles.liveLabel}>Wind</Text>
           </View>
           <Text style={styles.liveHint}>Wind speed</Text>
@@ -398,7 +398,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
         accessibilityLiveRegion="polite"
       >
         <TouchableOpacity activeOpacity={0.9}>
-          <Text style={styles.tempSuper}>
+          <Text style={[styles.tempSuper, { fontSize: temperatureFontSize, lineHeight: temperatureFontSize }]}>
             {Math.round(weather?.temperature || 0)}
             <Text style={styles.tempUnitMark}>°C</Text>
           </Text>
@@ -417,7 +417,7 @@ export const NowScreen = React.memo(function NowScreen({ weather, locationName, 
       {/* Footer */}
       <Animated.View style={[styles.nowFooter, { opacity: footerFade }]}>
         <Text style={styles.conditionLong}>
-          {expressiveDescription || `${weather?.description ? (weather.description.charAt(0).toUpperCase() + weather.description.slice(1)) : condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${Math.round(weather?.visibility ?? 0)} km.`}
+          {expressiveDescription || `${weather?.description ? (weather.description.charAt(0).toUpperCase() + weather.description.slice(1)) : condition.label} with ${weather?.cloudCover ?? 0}% cloud cover. Visibility ${weather?.visibility == null ? 'unavailable' : `${Math.round(weather.visibility)} km`}.`}
         </Text>
         {((weather?.rainVolume ?? 0) > 0 || (weather?.snowVolume ?? 0) > 0) && (
           <Text style={styles.precipNote}>
