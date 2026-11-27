@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Animated, AccessibilityInfo, ScrollView, TouchableOpacity, BackHandler, Linking } from 'react-native';
 import { theme } from '../utils/theme';
 import { WeatherValues, DailyInterval } from '../types/weather';
 import { ProOverlay } from '../components/ProBadge';
@@ -194,6 +194,17 @@ export const ScienceScreen = React.memo(function ScienceScreen({ weather, today,
             <Text style={styles.actionLabel}>Close App</Text>
           </TouchableOpacity>
         </View>
+
+        {/* OpenWeather attribution: keep visible and link to the provider. */}
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://openweathermap.org/')}
+          activeOpacity={0.7}
+          accessibilityRole="link"
+          accessibilityLabel="Weather data provided by OpenWeather. Visit OpenWeather website."
+          style={styles.attributionLink}
+        >
+          <Text style={styles.attributionText}>Weather data provided by OpenWeather ↗</Text>
+        </TouchableOpacity>
 
         {/* App branding */}
         <Text style={styles.brandMark}>Strata · Weather, felt.</Text>
@@ -473,6 +484,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: 'rgba(240,235,225,0.45)',
+  },
+
+  attributionLink: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 12,
+  },
+  attributionText: {
+    fontFamily: theme.fonts.mono,
+    fontSize: 10,
+    color: 'rgba(240,235,225,0.58)',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
 
   /* Brand mark */
