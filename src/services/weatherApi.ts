@@ -41,7 +41,7 @@ function mapCurrentWeather(data: any): WeatherValues {
   };
 }
 
-/** Map OWM 5-day/3h forecast item to hourly interval */
+/** Map one OpenWeather 5-day/3-hour forecast item to a timeline interval. */
 function mapHourlyItem(item: any): TimelineInterval {
   const main = item.main || {};
   const wind = item.wind || {};
@@ -91,9 +91,15 @@ function aggregateDaily(items: any[]): DailyInterval[] {
     const winds = dayItems.map((d: any) => d.wind?.speed ?? 0);
     const windDirs = dayItems.map((d: any) => d.wind?.deg ?? 0);
     const pops = dayItems.map((d: any) => Math.round((d.pop ?? 0) * 100));
-    // Pick the most significant weather condition (highest OWM id wins for severity)
-    const weatherIds = dayItems.map((d: any) => d.weather?.[0]?.id ?? 800);
-    const dominantId = weatherIds.reduce((a: number, b: number) => (b > a ? b : a), 800);
+    // Use the most frequently reported condition. OpenWeather condition IDs
+    // are categories, not an ordered severity scale.
+    const conditionCounts = new Map<number, number>();
+    for (const item of dayItems) {
+      const id = item.weather?.[0]?.id ?? 800;
+      conditionCounts.set(id, (conditionCounts.get(id) ?? 0) + 1);
+    }
+    const dominantId = [...conditionCounts.entries()]
+      .sort((a, b) => b[1] - a[1])[0]?.[0] ?? 800;
 
     dailyIntervals.push({
       startTime: `${date}T12:00:00Z`,
@@ -119,7 +125,10 @@ function aggregateDaily(items: any[]): DailyInterval[] {
 function computePressureTrend(items: any[]): 'rising' | 'falling' | 'steady' {
   if (items.length < 3) return 'steady';
   // Compare first 3 items (~9h) pressure trend
-  const pressures = items.slice(0, 4).map((d: any) => d.main?.pressure ?? 1013);
+  const pressures = items.slice(0, 4)
+    .map((d: any) => d.main?.pressure)
+    .filter((value: unknown): value is number => typeof value === 'number' && Number.isFinite(value));
+  if (pressures.length < 3) return 'steady';
   const first = pressures[0];
   const last = pressures[pressures.length - 1];
   const diff = last - first;
@@ -243,7 +252,8 @@ export async function fetchWeatherData(coords: LocationCoords): Promise<WeatherD
   const sunriseISO = sys.sunrise ? new Date(sys.sunrise * 1000).toISOString() : '';
   const sunsetISO = sys.sunset ? new Date(sys.sunset * 1000).toISOString() : '';
 
-  // Map 3-hour intervals to hourly (take first 24 = 3 days worth of 3h intervals)
+  // OpenWeather's free forecast endpoint returns 3-hour intervals, not hourly data.
+  // Keep the existing internal property name for compatibility with current screens.
   const forecastItems = forecastData.list || [];
   const hourly = forecastItems.slice(0, 24).map(mapHourlyItem);
 
