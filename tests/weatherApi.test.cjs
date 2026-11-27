@@ -47,6 +47,8 @@ test('current mapper rejects invalid optional measurements without losing valid 
   assert.equal(result.uvIndex, null);
   assert.equal(result.dewPoint, null);
   assert.equal(result.precipitationProbability, null);
+  assert.equal(result.rainVolume, null);
+  assert.equal(result.snowVolume, null);
 });
 
 test('current mapper rejects missing required measurements', () => {
@@ -64,6 +66,8 @@ test('3-hour forecast mapper bounds optional visibility and precipitation probab
   const valid = mapHourlyItem(forecast({ pop: 0.75 }));
   assert.equal(valid.values.precipitationProbability, 75);
   assert.equal(valid.values.visibility, 10);
+  assert.equal(valid.values.rainVolume, null);
+  assert.equal(valid.values.snowVolume, null);
 });
 
 test('daily aggregation uses the most frequent condition and circular wind direction', () => {
